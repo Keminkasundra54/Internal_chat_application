@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/services.dart';
@@ -6,27 +5,30 @@ import 'package:path/path.dart' as p;
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:firebase_chat/ChatView/full_photo.dart';
-import 'package:firebase_chat/ChatView/user_detail.dart';
-import 'package:firebase_database/firebase_database.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+// import 'package:firebase_database/firebase_database.dart';
+// import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
-import 'package:firebase_chat/Login/login.dart';
-
-
+// import 'package:cloud_firestore/cloud_firestore.dart' as firestore;
 
 class ChatScreen extends StatefulWidget {
-String Code;
-String Name;
-String Photo;
-String senderName;
-String senderUid;
-String senderEmail;
-  ChatScreen({Key key,this.Code,this.Name,this.Photo,this.senderName,this.senderUid,this.senderEmail}) : super(key: key);
+  String Code;
+  String Name;
+  String Photo;
+  String senderName;
+  String senderUid;
+  String senderEmail;
+  ChatScreen(
+      {Key? key,
+      required this.Code,
+      required this.Name,
+      required this.Photo,
+      required this.senderName,
+      required this.senderUid,
+      required this.senderEmail})
+      : super(key: key);
 
   @override
   State<StatefulWidget> createState() {
@@ -34,21 +36,21 @@ String senderEmail;
   }
 }
 
-class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin,WidgetsBindingObserver {
-
+class _ChatScreenState extends State<ChatScreen>
+    with TickerProviderStateMixin, WidgetsBindingObserver {
   final TextEditingController _messageTextController = TextEditingController();
   final GlobalKey<AnimatedListState> _listKey = GlobalKey();
   bool isscroolvisible = false;
 
-  DatabaseReference rootRef = FirebaseDatabase.instance.reference();
-  String groupChatId;
-  String peerId;
-  String peerAvatar;
-  String id;
+// DatabaseReference rootRef = FirebaseDatabase.instance.reference();
+  String? groupChatId;
+  String? peerId;
+  String? peerAvatar;
+  String? id;
   final secureStorage = new FlutterSecureStorage();
-  File imageFile;
+  File? imageFile;
   bool isLoading = false;
-  String imageUrl;
+  String? imageUrl;
   int _limit = 20;
   final int _limitIncrement = 20;
   final ScrollController listScrollController = ScrollController();
@@ -77,44 +79,54 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin,W
     _messageTextController.dispose();
     super.dispose();
   }
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     setState(() {
-      if (state == AppLifecycleState.detached || state == AppLifecycleState.paused) {
+      if (state == AppLifecycleState.detached ||
+          state == AppLifecycleState.paused) {
         print('offline');
-        FirebaseFirestore.instance
-            .collection('users')
-            .doc(widget.senderUid)
-            .update({'onlineStatus': "last seen at ${DateFormat('MMM dd').add_jm().format(DateTime.now())}"});
-      } else if (state == AppLifecycleState.resumed){
+        // FirebaseFirestore.instance
+        //     .collection('users')
+        //     .doc(widget.senderUid)
+        //     .update({
+        //   'onlineStatus':
+        //       "last seen at ${DateFormat('MMM dd').add_jm().format(DateTime.now())}"
+        // });
+      } else if (state == AppLifecycleState.resumed) {
         print('online');
-        FirebaseFirestore.instance
-            .collection('users')
-            .doc(widget.senderUid)
-            .update({'onlineStatus': "Online"});
+        // FirebaseFirestore.instance
+        //     .collection('users')
+        //     .doc(widget.senderUid)
+        //     .update({'onlineStatus': "Online"});
       }
       print("ssssss $state");
     });
   }
+
   readLocal() async {
     peerId = widget.Code;
-    id = await secureStorage.read(key: "id") ?? '';
-    if (id.hashCode <= peerId.hashCode) {
-      groupChatId = '$id-$peerId';
-    } else {
-      groupChatId = '$peerId-$id';
-    }
+    id = ''; // Fetch user id from your authentication system or storage
+    // Your socket.io logic for reading local data
 
-    FirebaseFirestore.instance
-        .collection('users')
-        .doc(id)
-        .update({'chattingWith': peerId});
+    // id = await secureStorage.read(key: "id") ?? '';
+    // if (id.hashCode <= peerId.hashCode) {
+    //   groupChatId = '$id-$peerId';
+    // } else {
+    //   groupChatId = '$peerId-$id';
+    // }
+
+    // FirebaseFirestore.instance
+    //     .collection('users')
+    //     .doc(id)
+    //     .update({'chattingWith': peerId});
 
     setState(() {});
   }
+
   _scrollListener() {
     if (listScrollController.offset >=
-        listScrollController.position.maxScrollExtent &&
+            listScrollController.position.maxScrollExtent &&
         !listScrollController.position.outOfRange) {
       print("reach the bottom");
       setState(() {
@@ -123,7 +135,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin,W
       });
     }
     if (listScrollController.offset <=
-        listScrollController.position.minScrollExtent &&
+            listScrollController.position.minScrollExtent &&
         !listScrollController.position.outOfRange) {
       print("reach the top");
       setState(() {
@@ -131,222 +143,382 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin,W
       });
     }
   }
+
   @override
   Widget build(BuildContext context) {
-
     return WillPopScope(
-      onWillPop: () {
-        Navigator.pop(context);
-      },
-        child:
-    Scaffold(appBar: _buildAppBar(context), body: _buildColumn(),backgroundColor: Colors.black,));
+        onWillPop: () {
+          Navigator.pop(context);
+          return Future.value(true);
+        },
+        child: Scaffold(
+          appBar: _buildAppBar(context),
+          body: _buildColumn(),
+          backgroundColor: Colors.black,
+        ));
   }
 
-  Widget _buildAppBar(BuildContext context) {
+  PreferredSizeWidget _buildAppBar(BuildContext context) {
     return AppBar(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(
           bottom: Radius.circular(30),
         ),
       ),
-      title:
-          Hero(
-        tag: "AppBar",
-        child:
-            Material(
-              color: Colors.transparent,
-              child:
-     GestureDetector(
-       onTap: () {
-         Navigator.push(
-             context,
-             MaterialPageRoute(
-                 builder: (context) => UserDetails(url: "AppBar",image: widget.Photo,uid: widget.Code,))).then((value)   {
+      // title: Hero(
+      //   tag: "AppBar",
+      //   child: Material(
+      //     color: Colors.transparent,
+      //     child: GestureDetector(
+      //       onTap: () {
+      //         Navigator.push(
+      //           context,
+      //           MaterialPageRoute(
+      //             builder: (context) => UserDetails(
+      //               url: "AppBar",
+      //               image: widget.Photo,
+      //               uid: widget.Code,
+      //             ),
+      //           ),
+      //         ).then((value) {
+      //           print("assssss");
+      //           setState(() {});
+      //         });
+      //       },
+      //       child: Row(
+      //         children: [
+      //           Container(
+      //             width: 35.0,
+      //             height: 35.0,
+      //             decoration: BoxDecoration(
+      //               shape: BoxShape.circle,
+      //               color: Colors.black12,
+      //               image: DecorationImage(
+      //                 fit: BoxFit.cover,
+      //                 image: NetworkImage(widget.Photo),
+      //               ),
+      //             ),
+      //           ),
+      //           StreamBuilder<QuerySnapshot>(
+      //             stream: FirebaseFirestore.instance
+      //                 .collection("users")
+      //                 .where("uid", isEqualTo: widget.Code)
+      //                 .snapshots(),
+      //             builder: (context, snapshot) {
+      //               if (snapshot.hasError) {
+      //                 return Text('Error: ${snapshot.error}'); // Handle errors
+      //               }
 
-                 print("assssss");
-                 setState(() {
+      //               if (snapshot.connectionState == ConnectionState.waiting) {
+      //                 return SizedBox(); // Show placeholder while waiting
+      //               }
 
-                 });
-         });
-       },
-       child:  Row(
-         children: [
-           Container(
-               width: 35.0,
-               height: 35.0,
-               decoration: new BoxDecoration(
-                   shape: BoxShape
-                       .circle,
-                   color: Colors
-                       .black12,
-                   image: new DecorationImage(
-                       fit: BoxFit
-                           .cover,
-                       image: NetworkImage(
-                           widget.Photo)))),
+      //               // Safe access to documents using null-safe operator
+      //               final data = snapshot.data?.docs;
 
-           StreamBuilder(
-             stream: FirebaseFirestore.instance.collection("users").where("uid",isEqualTo: widget.Code).snapshots(),
-             builder: (context, snap) {
-               if (snap.hasData) {
+      //               if (data?.isNotEmpty == true) {
+      //                 final userDoc =
+      //                     data![0]; // Access the first document safely
+      //                 final name = userDoc['name'];
+      //                 final onlineStatus = userDoc['onlineStatus'];
 
-                 return   Container(
-                   padding: EdgeInsets.only(left: 15),
-                   child: Column(
-                     mainAxisAlignment: MainAxisAlignment.start,
-                     crossAxisAlignment: CrossAxisAlignment.start,
-                     children: [
-                       Container(
-                         child:    Text("${snap.data.documents[0]['name'] != null ? snap.data.documents[0]['name'] : ''}",style: TextStyle(fontSize: 16,color: Colors.white),),
-                       ),
-                       snap.data.documents[0]['onlineStatus'] != '' ? Container(
-                         child:    Text("${snap.data.documents[0]['onlineStatus'] != null ? snap.data.documents[0]['onlineStatus'] : ''}",style: TextStyle(fontSize: 12,color: Colors.white),),
-                       ):SizedBox(),
-
-                     ],
-                   ),
-                 );
-               }
-               else
-                 return Center(
-                   child: Container(),
-                 );
-             },
-           ),
-
-
-         ],
-       ),
-     ),
-     ),
-     ),
+      //                 return Container(
+      //                   padding: EdgeInsets.only(left: 15),
+      //                   child: Column(
+      //                     mainAxisAlignment: MainAxisAlignment.start,
+      //                     crossAxisAlignment: CrossAxisAlignment.start,
+      //                     children: [
+      //                       Text(
+      //                         name ?? "", // Handle potential null value of name
+      //                         style:
+      //                             TextStyle(fontSize: 16, color: Colors.white),
+      //                       ),
+      //                       onlineStatus?.isNotEmpty ==
+      //                               true // Check if onlineStatus exists
+      //                           ? Text(
+      //                               onlineStatus,
+      //                               style: TextStyle(
+      //                                   fontSize: 12, color: Colors.white),
+      //                             )
+      //                           : SizedBox(),
+      //                     ],
+      //                   ),
+      //                 );
+      //               } else {
+      //                 return SizedBox(); // Handle no data case
+      //               }
+      //             },
+      //           ),
+      //         ],
+      //       ),
+      //     ),
+      //   ),
+      // ),
+      title: Text('Your Title Here'), // Replace with your title
 
       backgroundColor: Colors.white10,
     );
   }
 
+//   Widget _buildColumn() {
+//     return Column(
+//       children: <Widget>[
+//         new Flexible(
+//           child: StreamBuilder(
+//             stream: FirebaseFirestore.instance
+//                 .collection('messages')
+//                 .doc(groupChatId)
+//                 .collection(groupChatId)
+//                 .orderBy('timestamp', descending: true)
+//                 .snapshots(),
+//             builder: (context, snap) {
+//               if (snap.hasData) {
+//                 return new ListView.builder(
+//                   padding: new EdgeInsets.all(8.0),
+//                   reverse: true,
+//                   itemBuilder: (_, int index) =>
+//                       message(snap.data.documents[index]),
+//                   itemCount: snap.data.documents.length,
+//                   controller: listScrollController,
+//                 );
+//               } else
+//                 return Center(
+//                   child: Container(),
+//                 );
+//             },
+//           ),
+//         ),
+//         // StreamBuilder(
+//         //   stream: rootRef.child("typing").onValue,
+//         //   builder: (context, snap) {
+//         //     if (snap.hasData && !snap.hasError && snap.data.snapshot.value != null) {
+//         //       Map data = snap.data.snapshot.value;
+//         //       print(data["name"]);
+//         //       return data["name"] != widget.Name && data["name"] != '' ? Container(
+//         //         padding: EdgeInsets.only(left: 20),
+//         //         alignment: Alignment.centerLeft,
+//         //         child: Text(data["name"].toString() + " is typing..",style: TextStyle(color: Colors.white),),
+//         //       ) : SizedBox();
+//         //     }
+//         //     else
+//         //       return Center(
+//         //         child: Container(),
+//         //       );
+//         //   },
+//         // ),
+//         Padding(padding: EdgeInsets.only(top: 10)),
+//         Row(
+//           mainAxisAlignment: MainAxisAlignment.spaceAround,
+//           children: [
+//             Container(
+//               width: MediaQuery.of(context).size.width - 100,
+//               margin: EdgeInsets.only(bottom: 2),
+//               child: Material(
+//                 elevation: 5.0,
+//                 borderRadius: BorderRadius.circular(30),
+//                 child: new TextField(
+//                   textCapitalization: TextCapitalization.sentences,
+//                   controller: _messageTextController,
+//                   minLines: 1,
+//                   maxLines: 3,
+//                   onChanged: (text) {
+//                     // if (text != '') {
+//                     //   rootRef.child(widget.Code).child("typing").update({
+//                     //     "name" : widget.Name
+//                     //   });
+//                     // } else {
+//                     //   rootRef.child(widget.Code).child("typing").update({
+//                     //     "name" : ''
+//                     //   });
+//                     // }
+//                     // print(text);
+//                   },
+//                   decoration: new InputDecoration(
+//                       border: OutlineInputBorder(
+//                         borderRadius: BorderRadius.circular(30),
+//                         borderSide:
+//                             BorderSide(width: 0, style: BorderStyle.none),
+//                       ),
+//                       filled: true,
+//                       fillColor: Colors.white,
+//                       contentPadding: EdgeInsets.all(12),
+//                       suffixIcon: IconButton(
+//                         icon: Icon(Icons.image),
+//                         onPressed: () {
+//                           filePicker(context, 'image');
+//                         },
+//                         color: Colors.grey,
+//                       ),
+//                       hintText: "Type here...",
+//                       hintStyle: TextStyle(
+//                           fontFamily: 'Nunito',
+//                           color: HexColor.fromHex('#C5C5C5'),
+//                           fontSize: 13,
+//                           fontWeight: FontWeight.w500)),
+//                 ),
+//               ),
+//             ),
+//             GestureDetector(
+//               onTap: () async {
+//                 // _publishMessage(_messageTextController.text);
+//                 onSendMessage(_messageTextController.text, 0);
+//               },
+//               child: ClipOval(
+//                 child: Container(
+//                   child: Material(
+//                     elevation: 5,
+//                     child: Ink(
+//                       padding: EdgeInsets.all(15),
+//                       decoration: BoxDecoration(
+//                           gradient: LinearGradient(
+//                               colors: [
+//                                 Colors.deepPurple,
+//                                 Colors.deepOrangeAccent
+//                               ],
+//                               begin: const FractionalOffset(0.0, 0.0),
+//                               end: const FractionalOffset(1.3, 1.0),
+//                               stops: [0.0, 1.0],
+//                               tileMode: TileMode.clamp),
+//                           borderRadius: BorderRadius.circular(50.0)),
+// //                      splashColor: Colors.blue, // inkwell color
+//                       child: Icon(
+//                         Icons.send,
+//                         color: Colors.white,
+//                       ),
+//                     ),
+//                   ),
+//                 ),
+//               ),
+//             ),
+//           ],
+//         ),
+//         Padding(padding: EdgeInsets.only(top: 10)),
+//       ],
+//     );
+//   }
+
   Widget _buildColumn() {
     return Column(
       children: <Widget>[
-        new Flexible(
-            child: StreamBuilder(
-              stream: FirebaseFirestore.instance
-                  .collection('messages')
-                  .doc(groupChatId)
-                  .collection(groupChatId)
-                  .orderBy('timestamp', descending: true)
-                  .snapshots(),
-              builder: (context, snap) {
-                if (snap.hasData) {
+        // Flexible(
+        //   child: StreamBuilder<QuerySnapshot>(
+        //     stream: FirebaseFirestore.instance
+        //         .collection('messages')
+        //         .doc(groupChatId)
+        //         .collection(groupChatId!)
+        //         .orderBy('timestamp', descending: true)
+        //         .snapshots(),
+        //     builder: (context, snap) {
+        //       if (snap.hasError) {
+        //         return Text('Error: ${snap.error}'); // Handle errors
+        //       }
 
-                  return  new ListView.builder(
-                    padding: new EdgeInsets.all(8.0),
-                    reverse: true,
-                    itemBuilder: (_, int index) => message(snap.data.documents[index]),
-                    itemCount: snap.data.documents.length,
-                    controller: listScrollController,
-                  );
-                }
-                else
-                  return Center(
-                    child: Container(),
-                  );
-              },
-            ),),
-        // StreamBuilder(
-        //   stream: rootRef.child("typing").onValue,
-        //   builder: (context, snap) {
-        //     if (snap.hasData && !snap.hasError && snap.data.snapshot.value != null) {
-        //       Map data = snap.data.snapshot.value;
-        //       print(data["name"]);
-        //       return data["name"] != widget.Name && data["name"] != '' ? Container(
-        //         padding: EdgeInsets.only(left: 20),
-        //         alignment: Alignment.centerLeft,
-        //         child: Text(data["name"].toString() + " is typing..",style: TextStyle(color: Colors.white),),
-        //       ) : SizedBox();
-        //     }
-        //     else
-        //       return Center(
-        //         child: Container(),
-        //       );
-        //   },
+        //       if (snap.connectionState == ConnectionState.waiting) {
+        //         return Center(
+        //             child:
+        //                 CircularProgressIndicator()); // Show loading indicator
+        //       }
+
+        //       // Safe access to documents using null-safe operator
+        //       final data = snap.data?.docs;
+
+        //       if (data?.isNotEmpty == true) {
+        //         return ListView.builder(
+        //           padding: EdgeInsets.all(8.0),
+        //           reverse: true,
+        //           itemCount: data!
+        //               .length, // Use data! here as it's not null after the check
+        //           controller: listScrollController,
+        //           itemBuilder: (_, int index) => message(data[index]),
+        //         );
+        //       } else {
+        //         return SizedBox(); // Handle no data case
+        //       }
+        //     },
+        //   ),
         // ),
+        Flexible(
+          child: ListView.builder(
+            // Implement your chat list here
+            // Replace this with your chat list implementation
+            itemBuilder: (context, index) {
+              return ListTile(
+                title: Text('Chat Message $index'),
+              );
+            },
+            itemCount: 20,
+          ),
+        ),
         Padding(padding: EdgeInsets.only(top: 10)),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-
             Container(
               width: MediaQuery.of(context).size.width - 100,
               margin: EdgeInsets.only(bottom: 2),
-              child:
-              Material(
+              child: Material(
                 elevation: 5.0,
                 borderRadius: BorderRadius.circular(30),
-                child:  new TextField(
+                child: TextField(
                   textCapitalization: TextCapitalization.sentences,
                   controller: _messageTextController,
                   minLines: 1,
                   maxLines: 3,
                   onChanged: (text) {
-                    // if (text != '') {
-                    //   rootRef.child(widget.Code).child("typing").update({
-                    //     "name" : widget.Name
-                    //   });
-                    // } else {
-                    //   rootRef.child(widget.Code).child("typing").update({
-                    //     "name" : ''
-                    //   });
-                    // }
-                    // print(text);
+                    // Your logic here
                   },
-                  decoration:
-                  new InputDecoration(border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(30),
-                    borderSide: BorderSide(
-                        width: 0,
-                        style: BorderStyle.none
+                  decoration: InputDecoration(
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(30),
+                      borderSide: BorderSide(width: 0, style: BorderStyle.none),
+                    ),
+                    filled: true,
+                    fillColor: Colors.white,
+                    contentPadding: EdgeInsets.all(12),
+                    suffixIcon: IconButton(
+                      icon: Icon(Icons.image),
+                      onPressed: () => {
+                        // filePicker(context, 'image')
+                      },
+                      color: Colors.grey,
+                    ),
+                    hintText: "Type here...",
+                    hintStyle: TextStyle(
+                      fontFamily: 'Nunito',
+                      color: HexColor.fromHex('#C5C5C5'),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
-                      filled: true,
-                      fillColor: Colors.white,
-                      contentPadding: EdgeInsets.all(12),
-                      suffixIcon:  IconButton(
-                        icon: Icon(Icons.image),
-                        onPressed: () {
-                          filePicker(context,'image');
-                        },
-                        color: Colors.grey,
-                      ),
-                      hintText: "Type here...", hintStyle: TextStyle(fontFamily: 'Nunito',color: HexColor.fromHex('#C5C5C5'),fontSize: 13 , fontWeight: FontWeight.w500)),
                 ),
               ),
             ),
             GestureDetector(
-              onTap:  () async {
-                // _publishMessage(_messageTextController.text);
-                onSendMessage(_messageTextController.text,0);
+              onTap: () async {
+                // final message = _messageTextController.text;
+                // if (message.isNotEmpty) {
+                //   onSendMessage(message, 0); // Ensure message is not empty
+                // }
               },
-              child:
-              ClipOval(
-                child:
-                Container(
-                  child:  Material(
+              child: ClipOval(
+                child: Container(
+                  child: Material(
                     elevation: 5,
                     child: Ink(
                       padding: EdgeInsets.all(15),
                       decoration: BoxDecoration(
-                          gradient: LinearGradient(colors: [Colors.deepPurple ,Colors.deepOrangeAccent],
-                              begin: const FractionalOffset(0.0, 0.0),
-                              end: const FractionalOffset(1.3, 1.0),
-                              stops: [0.0, 1.0],
-                              tileMode: TileMode.clamp
-                          ),
-                          borderRadius: BorderRadius.circular(50.0)
+                        gradient: LinearGradient(
+                          colors: [Colors.deepPurple, Colors.deepOrangeAccent],
+                          begin: const FractionalOffset(0.0, 0.0),
+                          end: const FractionalOffset(1.3, 1.0),
+                          stops: [0.0, 1.0],
+                          tileMode: TileMode.clamp,
+                        ),
+                        borderRadius: BorderRadius.circular(50.0),
                       ),
-//                      splashColor: Colors.blue, // inkwell color
                       child: Icon(
-                        Icons.send,color: Colors.white,
+                        Icons.send,
+                        color: Colors.white,
                       ),
                     ),
                   ),
@@ -360,379 +532,636 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin,W
     );
   }
 
+// deleteMessage(data) {
+//   return showModalBottomSheet<void>(
+//       context: context,
+//       builder: (BuildContext context) {
+//         return Container(
+//             child: new Wrap(children: <Widget>[
+//           new ListTile(
+//               leading: new Icon(Icons.delete),
+//               title: new Text('Delete'),
+//               onTap: () async {
+//                 await FirebaseFirestore.instance
+//                     .runTransaction((Transaction myTransaction) async {
+//                   await myTransaction.delete(data.reference);
+//                 }).then((value) => Navigator.pop(context));
+//               }),
+//         ]));
+//       });
+// }
+  deleteMessage(data) {
+    return showModalBottomSheet<void>(
+      context: context,
+      builder: (BuildContext context) {
+        return Container(
+          child: new Wrap(children: <Widget>[
+            new ListTile(
+              leading: new Icon(Icons.delete),
+              title: new Text('Delete'),
+              onTap: () async {
+                // await firestore.FirebaseFirestore.instance.runTransaction(
+                //     (firestore.Transaction myTransaction) async {
+                //   await myTransaction.delete(data.reference);
+                // }).then((value) => Navigator.pop(context));
+              },
+            ),
+          ]),
+        );
+      },
+    );
+  }
 
-
-   deleteMessage(data) {
-     return showModalBottomSheet<void>(context: context,
-         builder: (BuildContext context) {
-           return Container(
-               child: new Wrap(
-                   children: <Widget>[
-                     new ListTile(
-                         leading: new Icon(Icons.delete),
-                         title: new Text('Delete'),
-                         onTap: () async {
-                           await FirebaseFirestore.instance.runTransaction((Transaction myTransaction) async {
-                             await myTransaction.delete(data.reference);
-                           }).then((value) => Navigator.pop(context));
-                         }
-
-                     ),
-
-                   ]
-               )
-           );
-         });
-   }
-
-
-
-  Widget message (data) {
-    return data['idFrom'] == widget.senderUid ? Container(
-      margin: const EdgeInsets.symmetric(vertical: 3),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: <Widget>[
-                Stack(
-                  children: <Widget>[
-
-                    data['type'] == 1
-                    // Image
-                        ?
-                        GestureDetector(
-                          onLongPress: () async {
-                            deleteMessage(data);
-                            // print(data['content']);
-                          },
-                            child:
-                    Container(
-                      margin: EdgeInsets.only(top: 5),
-                      child: FlatButton(
-                        child:  Hero(
-                          tag: 'Photo',
-                          child: Material(
-                            child: CachedNetworkImage(
-                              placeholder: (context, url) => Container(
-                                child: CircularProgressIndicator(
-                                  valueColor:
-                                  AlwaysStoppedAnimation<Color>(Colors.deepPurple),
-                                ),
-                                width: 200.0,
-                                height: 200.0,
-                                padding: EdgeInsets.all(70.0),
-                                decoration: BoxDecoration(
-                                  color: Colors.black87,
-                                  borderRadius: BorderRadius.all(
-                                    Radius.circular(8.0),
+  Widget message(data) {
+    return data['idFrom'] == widget.senderUid
+        ? Container(
+            margin: const EdgeInsets.symmetric(vertical: 3),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: <Widget>[
+                      Stack(
+                        children: <Widget>[
+                          data['type'] == 1
+                              // Image
+                              ? GestureDetector(
+                                  onLongPress: () async {
+                                    deleteMessage(data);
+                                    // print(data['content']);
+                                  },
+                                  child: Container(
+                                    margin: EdgeInsets.only(top: 5),
+                                    child: TextButton(
+                                      child: Hero(
+                                        tag: 'Photo',
+                                        child: Material(
+                                          child: CachedNetworkImage(
+                                            placeholder: (context, url) =>
+                                                Container(
+                                              child: CircularProgressIndicator(
+                                                valueColor:
+                                                    AlwaysStoppedAnimation<
+                                                            Color>(
+                                                        Colors.deepPurple),
+                                              ),
+                                              width: 200.0,
+                                              height: 200.0,
+                                              padding: EdgeInsets.all(70.0),
+                                              decoration: BoxDecoration(
+                                                color: Colors.black87,
+                                                borderRadius: BorderRadius.all(
+                                                  Radius.circular(8.0),
+                                                ),
+                                              ),
+                                            ),
+                                            errorWidget:
+                                                (context, url, error) =>
+                                                    Material(
+                                              child: Image.asset(
+                                                'images/img_not_available.jpeg',
+                                                width: 200.0,
+                                                height: 200.0,
+                                                fit: BoxFit.cover,
+                                              ),
+                                              borderRadius: BorderRadius.all(
+                                                Radius.circular(8.0),
+                                              ),
+                                              clipBehavior: Clip.hardEdge,
+                                            ),
+                                            imageUrl: data['content'],
+                                            width: 200.0,
+                                            height: 200.0,
+                                            fit: BoxFit.cover,
+                                          ),
+                                          borderRadius: BorderRadius.all(
+                                              Radius.circular(8.0)),
+                                          clipBehavior: Clip.hardEdge,
+                                        ),
+                                      ),
+                                      onPressed: () {
+                                        // Navigator.push(
+                                        //     context,
+                                        //     MaterialPageRoute(
+                                        //         builder: (context) => FullPhoto(
+                                        //             url: data['content'])));
+                                      },
+                                      style: TextButton.styleFrom(
+                                        padding: EdgeInsets.all(0),
+                                      ),
+                                    ),
+                                  ))
+                              : GestureDetector(
+                                  onLongPress: () async {
+                                    deleteMessage(data);
+                                    // await FirebaseFirestore.instance.runTransaction((Transaction myTransaction) async {
+                                    //   await myTransaction.delete(data.reference);
+                                    // });
+                                  },
+                                  child: Container(
+                                    margin: const EdgeInsets.only(
+                                        right: 10.0, left: 90),
+                                    decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                            colors: [
+                                              Colors.deepPurple,
+                                              Colors.white38
+                                            ],
+                                            begin: const FractionalOffset(
+                                                0.0, 0.0),
+                                            end: const FractionalOffset(
+                                                1.2, 1.0),
+                                            stops: [0.0, 1.0],
+                                            tileMode: TileMode.clamp),
+                                        borderRadius: BorderRadius.only(
+                                            bottomLeft: Radius.circular(16),
+                                            topRight: Radius.circular(16),
+                                            topLeft: Radius.circular(19))),
+                                    child: Column(
+                                      children: <Widget>[
+                                        Stack(
+                                          children: <Widget>[
+                                            new Container(
+                                              margin: const EdgeInsets.only(
+                                                  top: 12,
+                                                  left: 12,
+                                                  right: 35,
+                                                  bottom: 12),
+                                              child: new Text(
+                                                data['content'].toString(),
+                                                style: TextStyle(
+                                                    fontSize: 18,
+                                                    color: Colors.white),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
-                              ),
-                              errorWidget: (context, url, error) => Material(
-                                child: Image.asset(
-                                  'images/img_not_available.jpeg',
-                                  width: 200.0,
-                                  height: 200.0,
-                                  fit: BoxFit.cover,
-                                ),
-                                borderRadius: BorderRadius.all(
-                                  Radius.circular(8.0),
-                                ),
-                                clipBehavior: Clip.hardEdge,
-                              ),
-                              imageUrl: data['content'],
-                              width: 200.0,
-                              height: 200.0,
-                              fit: BoxFit.cover,
-                            ),
-                            borderRadius: BorderRadius.all(Radius.circular(8.0)),
-                            clipBehavior: Clip.hardEdge,
-                          ),
-                        ),
-                        onPressed: () {
-                          Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) => FullPhoto(
-                                      url: data['content'])));
-                        },
-                        padding: EdgeInsets.all(0),
+                        ],
                       ),
-                    )) :    GestureDetector(
-                      onLongPress: () async {
-                        deleteMessage(data);
-                        // await FirebaseFirestore.instance.runTransaction((Transaction myTransaction) async {
-                        //   await myTransaction.delete(data.reference);
-                        // });
-                      },
-                      child: Container(
-                        margin: const EdgeInsets.only(right: 10.0, left: 90),
-                        decoration: BoxDecoration(
-                            gradient: LinearGradient(colors: [Colors.deepPurple, Colors.white38],
-                                begin: const FractionalOffset(0.0, 0.0),
-                                end: const FractionalOffset(1.2, 1.0),
-                                stops: [0.0, 1.0],
-                                tileMode: TileMode.clamp
-                            ),
-                            borderRadius: BorderRadius.only(bottomLeft: Radius.circular(16),topRight:Radius.circular(16),topLeft: Radius.circular(19) )
-                        ),
-                        child: Column(
-                          children: <Widget>[
-                            Stack(
-                              children: <Widget>[
-                                new Container(
-                                  margin: const EdgeInsets.only(top: 12 ,left: 12,right: 35,bottom: 12),
-                                  child: new Text(data['content'].toString(),style: TextStyle(fontSize: 18,color: Colors.white),),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-
-                  ],
+                    ],
+                  ),
                 ),
-
               ],
             ),
-          ),
-        ],
-      ),
-    ) : Container(
-      margin: const EdgeInsets.symmetric(vertical: 3),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Stack(
-                  children: <Widget>[
-                    data['type'] == 1
-                    // Image
-                        ? Container(
-                      margin: EdgeInsets.only(top: 5),
-                      child: FlatButton(
-                        child:  Hero(
-                          tag: '${data['content']}',
-                          child: Material(
-                            child: CachedNetworkImage(
-                              placeholder: (context, url) => Container(
-                                child: CircularProgressIndicator(
-                                  valueColor:
-                                  AlwaysStoppedAnimation<Color>(Colors.deepPurple),
-                                ),
-                                width: 200.0,
-                                height: 200.0,
-                                padding: EdgeInsets.all(70.0),
-                                decoration: BoxDecoration(
-                                  color: Colors.black87,
-                                  borderRadius: BorderRadius.all(
-                                    Radius.circular(8.0),
+          )
+        : Container(
+            margin: const EdgeInsets.symmetric(vertical: 3),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Stack(
+                        children: <Widget>[
+                          data['type'] == 1
+                              // Image
+                              ? Container(
+                                  margin: EdgeInsets.only(top: 5),
+                                  child: TextButton(
+                                    child: Hero(
+                                      tag: '${data['content']}',
+                                      child: Material(
+                                        child: CachedNetworkImage(
+                                          placeholder: (context, url) =>
+                                              Container(
+                                            child: CircularProgressIndicator(
+                                              valueColor:
+                                                  AlwaysStoppedAnimation<Color>(
+                                                      Colors.deepPurple),
+                                            ),
+                                            width: 200.0,
+                                            height: 200.0,
+                                            padding: EdgeInsets.all(70.0),
+                                            decoration: BoxDecoration(
+                                              color: Colors.black87,
+                                              borderRadius: BorderRadius.all(
+                                                Radius.circular(8.0),
+                                              ),
+                                            ),
+                                          ),
+                                          errorWidget: (context, url, error) =>
+                                              Material(
+                                            child: Image.asset(
+                                              'images/img_not_available.jpeg',
+                                              width: 200.0,
+                                              height: 200.0,
+                                              fit: BoxFit.cover,
+                                            ),
+                                            borderRadius: BorderRadius.all(
+                                              Radius.circular(8.0),
+                                            ),
+                                            clipBehavior: Clip.hardEdge,
+                                          ),
+                                          imageUrl: data['content'],
+                                          width: 200.0,
+                                          height: 200.0,
+                                          fit: BoxFit.cover,
+                                        ),
+                                        borderRadius: BorderRadius.all(
+                                            Radius.circular(8.0)),
+                                        clipBehavior: Clip.hardEdge,
+                                      ),
+                                    ),
+                                    onPressed: () {
+                                      // Navigator.push(
+                                      //     context,
+                                      //     MaterialPageRoute(
+                                      //         builder: (context) => FullPhoto(
+                                      //             url: data['content'])));
+                                    },
+                                    style: TextButton.styleFrom(
+                                      padding: EdgeInsets.all(0),
+                                    ),
                                   ),
-                                ),
-                              ),
-                              errorWidget: (context, url, error) => Material(
-                                child: Image.asset(
-                                  'images/img_not_available.jpeg',
-                                  width: 200.0,
-                                  height: 200.0,
-                                  fit: BoxFit.cover,
-                                ),
-                                borderRadius: BorderRadius.all(
-                                  Radius.circular(8.0),
-                                ),
-                                clipBehavior: Clip.hardEdge,
-                              ),
-                              imageUrl: data['content'],
-                              width: 200.0,
-                              height: 200.0,
-                              fit: BoxFit.cover,
-                            ),
-                            borderRadius: BorderRadius.all(Radius.circular(8.0)),
-                            clipBehavior: Clip.hardEdge,
-                          ),
-                        ),
-                        onPressed: () {
-                          Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) => FullPhoto(
-                                      url: data['content'])));
-                        },
-                        padding: EdgeInsets.all(0),
-                      ),
-                    ) :  GestureDetector(
-                      onTap: () {
-
-                      },
-                      child: Container(
-                        margin: const EdgeInsets.only(right: 90.0, left: 10),
-                        decoration: BoxDecoration(
-                            gradient: LinearGradient(colors: [Colors.white38, Colors.black38],
+                                )
+                              : GestureDetector(
+                                  onTap: () {},
+                                  child: Container(
+                                    margin: const EdgeInsets.only(
+                                        right: 90.0, left: 10),
+                                    decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                            colors: [
+                                              Colors.white38,
+                                              Colors.black38
+                                            ],
 //                    begin: Alignment.topLeft,
 //                    end: Alignment.bottomRight,
-                                begin: const FractionalOffset(0.0, 0.0),
-                                end: const FractionalOffset(1.2, 1.0),
-                                stops: [0.0, 1.0],
-                                tileMode: TileMode.clamp
-
-                            ),
-                            borderRadius: BorderRadius.only(bottomRight: Radius.circular(16),topRight:Radius.circular(16),topLeft: Radius.circular(19) )
-                        ),
-                        child: Column(
-                          children: <Widget>[
-                            Stack(
-                              children: <Widget>[
-                                new Container(
-                                  margin: const EdgeInsets.only(top: 12 ,left: 12,right: 35,bottom: 12),
-                                  child: new Text(data['content'].toString(),style: TextStyle(fontSize: 18,color: Colors.white),),
+                                            begin: const FractionalOffset(
+                                                0.0, 0.0),
+                                            end: const FractionalOffset(
+                                                1.2, 1.0),
+                                            stops: [0.0, 1.0],
+                                            tileMode: TileMode.clamp),
+                                        borderRadius: BorderRadius.only(
+                                            bottomRight: Radius.circular(16),
+                                            topRight: Radius.circular(16),
+                                            topLeft: Radius.circular(19))),
+                                    child: Column(
+                                      children: <Widget>[
+                                        Stack(
+                                          children: <Widget>[
+                                            new Container(
+                                              margin: const EdgeInsets.only(
+                                                  top: 12,
+                                                  left: 12,
+                                                  right: 35,
+                                                  bottom: 12),
+                                              child: new Text(
+                                                data['content'].toString(),
+                                                style: TextStyle(
+                                                    fontSize: 18,
+                                                    color: Colors.white),
+                                              ),
+                                            ),
+                                            // Positioned(
+                                            //   top: 5,left: 12,
+                                            //   child: Container(
+                                            //     child: new Text(data['Sender'].toString(),style: TextStyle(fontSize: 11,color: Colors.white),),
+                                            //   ),
+                                            // ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
                                 ),
-                                // Positioned(
-                                //   top: 5,left: 12,
-                                //   child: Container(
-                                //     child: new Text(data['Sender'].toString(),style: TextStyle(fontSize: 11,color: Colors.white),),
-                                //   ),
-                                // ),
-                              ],
-                            ),
-                          ],
-                        ),
+                        ],
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-
               ],
             ),
-          ),
-        ],
-      ),
-    );
+          );
   }
 
   void _publishMessage(String text) {
     if (text != '') {
       print(widget.Name);
-      var newkey = rootRef.child("Messages").push().key;
+      // var newkey = rootRef.child("Messages").push().key;
       String timestamp() => DateTime.now().millisecondsSinceEpoch.toString();
       DateTime now = DateTime.now();
       String time = new DateFormat.jm().format(now);
-      rootRef.child("Messages").child(newkey).set({
-        "Sender" : widget.senderName,
-        "SenderCode" : widget.senderUid,
-        "Code" : widget.Code,
-        "Message" : text.trim(),
-        "created" : int.parse(timestamp()),
-        "Time" : "$time",
-      });
+      // rootRef.child("Messages").child(newkey!).set({
+      //   "Sender": widget.senderName,
+      //   "SenderCode": widget.senderUid,
+      //   "Code": widget.Code,
+      //   "Message": text.trim(),
+      //   "created": int.parse(timestamp()),
+      //   "Time": "$time",
+      // });
       _messageTextController.clear();
       // rootRef.child(widget.Code).child("typing").update({
       //   "name" : ''
       // });
     }
-    }
-  Future uploadFile(file,fileType) async {
-    String Url;
+  }
+
+// Future uploadFile(file, fileType) async {
+//   String Url;
+//   String fileName = DateTime.now().millisecondsSinceEpoch.toString();
+//   StorageReference reference;
+//   if (fileType == 1) {
+//     reference = FirebaseStorage.instance.ref().child('images/$fileName');
+//   } else if (fileType == 2) {
+//     reference = FirebaseStorage.instance.ref().child('audios/$fileName');
+//   } else if (fileType == 3) {
+//     reference = FirebaseStorage.instance.ref().child('videos/$fileName');
+//   } else if (fileType == 4) {
+//     reference = FirebaseStorage.instance.ref().child('documents/$fileName');
+//   }
+//   StorageUploadTask uploadTask = reference.putFile(file);
+//   StorageTaskSnapshot storageTaskSnapshot = await uploadTask.onComplete;
+//   storageTaskSnapshot.ref.getDownloadURL().then((downloadUrl) {
+//     Url = downloadUrl;
+//     print(downloadUrl);
+//     setState(() {
+//       isLoading = false;
+//       onSendMessage(Url, fileType);
+//     });
+//   }, onError: (err) {
+//     setState(() {
+//       isLoading = false;
+//     });
+//   });
+// }
+
+  Future<void> uploadFile(File file, int fileType) async {
+    String url;
     String fileName = DateTime.now().millisecondsSinceEpoch.toString();
-    StorageReference reference;
-    if (fileType == 1) {
-      reference = FirebaseStorage.instance.ref().child('images/$fileName');
-    } else if (fileType == 2) {
-      reference = FirebaseStorage.instance.ref().child('audios/$fileName');
-    } else if (fileType == 3) {
-      reference = FirebaseStorage.instance.ref().child('videos/$fileName');
-    } else if (fileType == 4) {
-      reference = FirebaseStorage.instance.ref().child('documents/$fileName');
-    }
-    StorageUploadTask uploadTask = reference.putFile(file);
-    StorageTaskSnapshot storageTaskSnapshot = await uploadTask.onComplete;
-    storageTaskSnapshot.ref.getDownloadURL().then((downloadUrl) {
-      Url = downloadUrl;
-      print(downloadUrl);
-      setState(() {
-        isLoading = false;
-        onSendMessage(Url, fileType);
-      });
-    }, onError: (err) {
-      setState(() {
-        isLoading = false;
-      });
-    });
-  }
-  Future getImage() async {
-    ImagePicker imagePicker = ImagePicker();
-    PickedFile pickedFile;
+// StorageReference storageRef;
 
-    pickedFile = await imagePicker.getImage(source: ImageSource.gallery);
-    imageFile = File(pickedFile.path);
+// try {
+//   // Create a reference based on fileType
+//   switch (fileType) {
+//     case 1:
+//       storageRef = FirebaseStorage.instance.ref().child('images/$fileName');
+//       break;
+//     case 2:
+//       storageRef = FirebaseStorage.instance.ref().child('audios/$fileName');
+//       break;
+//     case 3:
+//       storageRef = FirebaseStorage.instance.ref().child('videos/$fileName');
+//       break;
+//     case 4:
+//       storageRef = FirebaseStorage.instance.ref().child('documents/$fileName');
+//       break;
+//     default:
+//       print('Invalid file type: $fileType');
+//       return;  // Handle invalid file type
+//   }
 
-    if (imageFile != null) {
-      setState(() {
-        isLoading = true;
-      });
-      uploadFile(imageFile,1);
-    }
+//   // Upload the file
+//   final uploadTask = storageRef.putFile(file);
+//   final storageTaskSnapshot = await uploadTask.onComplete;
+//   url = await storageTaskSnapshot.ref.getDownloadURL();
+
+//   print(url);
+//   setState(() {
+//     isLoading = false;
+//     onSendMessage(url, fileType);
+//   });
+// } catch (e) {
+//   print('Error uploading file: $e');
+//   setState(() {
+//     isLoading = false;
+//   });
+// }
   }
-  Future filePicker(BuildContext context,fileType) async {
-    File file;
-    String fileName;
+
+// Future getImage() async {
+//   ImagePicker imagePicker = ImagePicker();
+//   PickedFile pickedFile;
+
+//   pickedFile = await imagePicker.getImage(source: ImageSource.gallery);
+//   imageFile = File(pickedFile.path);
+
+//   setState(() {
+//     isLoading = true;
+//   });
+//   uploadFile(imageFile, 1);
+// }
+  Future<void> getImage() async {
+    final ImagePicker imagePicker = ImagePicker();
+    XFile? pickedFile;
+
     try {
-      if (fileType == 'image') {
-        file = await FilePicker.getFile(type: FileType.IMAGE);
+      pickedFile = await imagePicker.pickImage(source: ImageSource.gallery);
+      if (pickedFile != null) {
+        final imageFile = File(pickedFile.path);
+
         setState(() {
-          fileName = p.basename(file.path);
+          isLoading = true;
         });
-        print(fileName);
-        uploadFile(file,1);
-      }
-      if (fileType == 'audio') {
-        file = await FilePicker.getFile(type: FileType.AUDIO);        fileName = p.basename(file.path);
-        setState(() {
-          fileName = p.basename(file.path);
-        });
-        print(fileName);
-        uploadFile(file,2);
-      }
-      if (fileType == 'video') {
-        file = await FilePicker.getFile(type: FileType.VIDEO);        fileName = p.basename(file.path);
-        setState(() {
-          fileName = p.basename(file.path);
-        });
-        print(fileName);
-        uploadFile(file,3);
-      }
-      if (fileType == 'pdf' || fileType == 'others') {
-        file = await FilePicker.getFile(type: FileType.CUSTOM, fileExtension: 'pdf');        fileName = p.basename(file.path);
-        setState(() {
-          fileName = p.basename(file.path);
-        });
-        print(fileName);
-        uploadFile(file,4);
+        uploadFile(imageFile, 1); // Assuming uploadFile handles file type
+      } else {
+        print('User canceled image selection');
       }
     } on PlatformException catch (e) {
-      showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              title: Text('Sorry...'),
-              content: Text('Unsupported exception: $e'),
-              actions: <Widget>[
-                FlatButton(
-                  child: Text('OK'),
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                )
-              ],
-            );
-          }
-      );
+      // Handle platform exceptions (e.g., permission errors)
+      print('Error picking image: $e');
     }
   }
+
+// Future filePicker(BuildContext context, fileType) async {
+//   File file;
+//   String fileName;
+//   try {
+//     if (fileType == 'image') {
+//       file = await FilePicker.getFile(type: FileType.IMAGE);
+//       setState(() {
+//         fileName = p.basename(file.path);
+//       });
+//       print(fileName);
+//       uploadFile(file, 1);
+//     }
+//     if (fileType == 'image') {
+//       final result = await FilePicker.pickFiles(type: FileType.IMAGE);
+//       if (result != null) {
+//         file = result.first; // Assuming you want the first selected file
+//         fileName = p.basename(file.path);
+//         setState(() {
+//           fileName = fileName;
+//         });
+//         print(fileName);
+//         uploadFile(file, 1);
+//       }
+//     }
+//     if (fileType == 'audio') {
+//       file = await FilePicker.getFile(type: FileType.AUDIO);
+//       fileName = p.basename(file.path);
+//       setState(() {
+//         fileName = p.basename(file.path);
+//       });
+//       print(fileName);
+//       uploadFile(file, 2);
+//     }
+//     if (fileType == 'video') {
+//       file = await FilePicker.getFile(type: FileType.VIDEO);
+//       fileName = p.basename(file.path);
+//       setState(() {
+//         fileName = p.basename(file.path);
+//       });
+//       print(fileName);
+//       uploadFile(file, 3);
+//     }
+//     if (fileType == 'pdf' || fileType == 'others') {
+//       file = await FilePicker.getFile(
+//           type: FileType.CUSTOM, fileExtension: 'pdf');
+//       fileName = p.basename(file.path);
+//       setState(() {
+//         fileName = p.basename(file.path);
+//       });
+//       print(fileName);
+//       uploadFile(file, 4);
+//     }
+//   } on PlatformException catch (e) {
+//     showDialog(
+//         context: context,
+//         builder: (BuildContext context) {
+//           return AlertDialog(
+//             title: Text('Sorry...'),
+//             content: Text('Unsupported exception: $e'),
+//             actions: <Widget>[
+//               FlatButton(
+//                 child: Text('OK'),
+//                 onPressed: () {
+//                   Navigator.of(context).pop();
+//                 },
+//               )
+//             ],
+//           );
+//         });
+//   }
+// }
+  // Future<void> filePicker(BuildContext context, String fileType) async {
+  //   PlatformFile? platformFile;
+  //   String fileName = '';
+  //   try {
+  //     // Check if FileType is imported
+  //     if (FileType.values == null) {
+  //       throw Exception('Missing FileType import from file_picker package');
+  //     }
+
+  //     final fileTypeValue = _getFileTypeFromName(fileType);
+  //     if (fileTypeValue == null) {
+  //       print('Invalid file type: $fileType');
+  //       return; // Handle invalid file type
+  //     }
+
+  //     // final result = await FilePicker.platform.pickFiles(type: fileTypeValue);
+  //         final result = await FilePicker.platform.pickFiles(type: fileType);
+  //     if (result != null && result.files.isNotEmpty) {
+  //       platformFile = result.files.first;
+  //       fileName = p.basename(platformFile.path!);
+  //       setState(() {
+  //         fileName =
+  //             fileName; // Assuming you want to update the UI with the filename
+  //       });
+  //       print(fileName);
+  //       //  File file = File(platformFile.path!);
+  //        File file = File.fromUri(Uri.file(platformFile.path!));
+  //       uploadFile(file, fileType); // Assuming uploadFile handles file type
+  //     }
+  //   } on PlatformException catch (e) {
+  //     showDialog(
+  //       context: context,
+  //       builder: (BuildContext context) {
+  //         return AlertDialog(
+  //           title: Text('Error'),
+  //           content: Text('Unsupported exception: $e'),
+  //           actions: <Widget>[
+  //             TextButton(
+  //               child: Text('OK'),
+  //               onPressed: () => Navigator.of(context).pop(),
+  //             ),
+  //           ],
+  //         );
+  //       },
+  //     );
+  //   } catch (e) {
+  //     // Handle other exceptions
+  //     print('Error: $e');
+  //   }
+  // }
+  Future<void> filePicker(BuildContext context, int fileType) async {
+  PlatformFile? platformFile;
+  String fileName = '';
+   FileType fileTypeValue;
+   switch (fileType) {
+    case 0:
+      fileTypeValue = FileType.image;
+      break;
+    case 1:
+      fileTypeValue = FileType.audio;
+      break;
+    case 2:
+      fileTypeValue = FileType.video;
+      break;
+    // Add more cases as needed for other file types
+    default:
+      throw ArgumentError('Invalid fileType: $fileType');
+  }
+  try {
+    final result = await FilePicker.platform.pickFiles(type: fileTypeValue);
+    if (result != null && result.files.isNotEmpty) {
+      platformFile = result.files.first;
+      fileName = p.basename(platformFile.path!);
+      setState(() {
+        fileName = fileName;
+      });
+      print(fileName);
+
+      // Convert PlatformFile to File
+      File file = File.fromUri(Uri.file(platformFile.path!));
+
+      uploadFile(file, fileType); // Now, you're passing a File
+    }
+  } on PlatformException catch (e) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Error'),
+          content: Text('Unsupported exception: $e'),
+          actions: <Widget>[
+            TextButton(
+              child: Text('OK'),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+          ],
+        );
+      },
+    );
+  } catch (e) {
+    print('Error: $e');
+  }
+}
+
+
+  FileType? _getFileTypeFromName(String name) {
+    switch (name.toLowerCase()) {
+      case "image":
+        return FileType.image;
+      case "audio":
+        return FileType.audio;
+      case "video":
+        return FileType.video;
+      case "pdf":
+        return FileType.custom; // Assuming you set file extension for PDF
+      // Add cases for other supported file types
+      default:
+        return null;
+    }
+  }
+
   void onSendMessage(String content, int type) {
     // type: 0 = text, 1 = image, 2 = audio, 3 = video, 4 = others and pdf
     if (content.trim() != '') {
@@ -741,7 +1170,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin,W
       var documentReference = FirebaseFirestore.instance
           .collection('messages')
           .doc(groupChatId)
-          .collection(groupChatId)
+          .collection(groupChatId!)
           .doc(DateTime.now().millisecondsSinceEpoch.toString());
 
       FirebaseFirestore.instance.runTransaction((transaction) async {
@@ -759,9 +1188,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin,W
       });
       listScrollController.animateTo(0.0,
           duration: Duration(milliseconds: 300), curve: Curves.easeOut);
-    } else {
-
-    }
+    } else {}
   }
 }
 

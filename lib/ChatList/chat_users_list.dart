@@ -1,21 +1,14 @@
-import 'dart:async';
-import 'dart:convert';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_chat/ChatView/ChatScreen.dart';
-import 'package:firebase_chat/Profile/profile.dart';
-import 'package:firebase_database/firebase_database.dart';
+// import 'package:cloud_firestore/cloud_firestore.dart';
+// import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:intl/intl.dart';
-import 'package:firebase_chat/Login/login.dart';
 
 
 
 class ChatUserList extends StatefulWidget {
-  ChatUserList({Key key}) : super(key: key);
+  ChatUserList({Key? key}) : super(key: key);
 
   @override
   State<StatefulWidget> createState() {
@@ -30,11 +23,11 @@ class _ChatUserListState extends State<ChatUserList> with TickerProviderStateMix
   final GlobalKey<AnimatedListState> _listKey = GlobalKey();
   bool isscroolvisible = false;
   final _scrollcontroller = ScrollController();
-  DatabaseReference rootRef = FirebaseDatabase.instance.reference();
-  String uid ='';
-  String email ='';
-  String name = '';
-  AppLifecycleState _lastLifecycleState;
+  // DatabaseReference rootRef = FirebaseDatabase.instance.reference();
+  String? uid ='';
+  String? email ='';
+  String? name = '';
+  AppLifecycleState _lastLifecycleState = AppLifecycleState.resumed;
   @override
   void initState() {
     WidgetsBinding.instance.addObserver(this);
@@ -50,16 +43,16 @@ class _ChatUserListState extends State<ChatUserList> with TickerProviderStateMix
       _lastLifecycleState = state;
       if (state == AppLifecycleState.detached || state == AppLifecycleState.paused) {
         print('offline');
-        FirebaseFirestore.instance
-            .collection('users')
-            .doc(uid)
-            .update({'onlineStatus': "last seen at ${DateFormat('MMM dd').add_jm().format(DateTime.now())}"});
+        // FirebaseFirestore.instance
+        //     .collection('users')
+        //     .doc(uid)
+        //     .update({'onlineStatus': "last seen at ${DateFormat('MMM dd').add_jm().format(DateTime.now())}"});
       } else if (state == AppLifecycleState.resumed){
         print('online');
-        FirebaseFirestore.instance
-            .collection('users')
-            .doc(uid)
-            .update({'onlineStatus': "Online"});
+        // FirebaseFirestore.instance
+        //     .collection('users')
+        //     .doc(uid)
+        //     .update({'onlineStatus': "Online"});
       }
       print("ssssss $state");
     });
@@ -68,10 +61,10 @@ class _ChatUserListState extends State<ChatUserList> with TickerProviderStateMix
     uid = await secureStorage.read(key: "id");
     email = await secureStorage.read(key: "email");
     name = await secureStorage.read(key: "name");
-    FirebaseFirestore.instance
-        .collection('users')
-        .doc(uid)
-        .update({'onlineStatus': "Online"});
+    // FirebaseFirestore.instance
+    //     .collection('users')
+    //     .doc(uid)
+    //     .update({'onlineStatus': "Online"});
   }
   @override
   void dispose() {
@@ -85,12 +78,14 @@ class _ChatUserListState extends State<ChatUserList> with TickerProviderStateMix
     return WillPopScope(
         onWillPop: () {
           SystemNavigator.pop();
+          return Future.value(true); // Allow back navigation
         },
         child:
         Scaffold(appBar: _buildAppBar(context), body: _buildColumn(),backgroundColor: Colors.black,));
   }
 
-  Widget _buildAppBar(BuildContext context) {
+  // Widget _buildAppBar(BuildContext context) {
+  PreferredSizeWidget _buildAppBar(BuildContext context) {
     return AppBar(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(
@@ -106,10 +101,10 @@ class _ChatUserListState extends State<ChatUserList> with TickerProviderStateMix
       ),
       actions: [
         IconButton(icon: Icon(Icons.account_circle), onPressed: () {
-          Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (context) => Profile(url: "AppBar",uid: uid,)));
+          // Navigator.push(
+          //     context,
+          //     MaterialPageRoute(
+          //         builder: (context) => Profile(url: "AppBar",uid: uid!, image: '',)));
         },padding: EdgeInsets.only(right: 25),),
 
       ],
@@ -117,34 +112,66 @@ class _ChatUserListState extends State<ChatUserList> with TickerProviderStateMix
     );
   }
 
-  Widget _buildColumn() {
+  // Widget _buildColumn() {
+  //   return Column(
+  //     children: <Widget>[
+  //       new Flexible(
+  //         child: StreamBuilder(
+  //           stream: FirebaseFirestore.instance.collection("users").snapshots(),
+  //           builder: (context, snap) {
+  //             // if (snap.hasData && snap.data != null) {
+  //             //   // print(snap.data.documents[0]['name']);
+  //             //   return  new ListView.builder(
+  //             //     padding: new EdgeInsets.only(top:8.0,bottom: 8),
+  //             //     // reverse: true,
+  //             //     itemBuilder: (_, int index) => buildCard(snap.data.documents[index]),
+  //             //     itemCount: snap.data.documents.length,
+  //             //   );
+  //             // }
+  //              if (snap.hasData && snap.data != null) {
+  //             return ListView.builder(
+  //               padding: EdgeInsets.only(top: 8.0, bottom: 8),
+  //               itemBuilder: (_, int index) {
+  //                 var documents = snap.data!.docs;
+  //                 if (documents != null && index < documents.length) {
+  //                   return buildCard(documents[index]);
+  //                 } else {
+  //                   return SizedBox();
+  //                 }
+  //               },
+  //               itemCount: snap.data!.docs.length,
+  //             );
+  //           }
+  //             else
+  //               return Center(
+  //                 child: Container(
+  //                   child: Text("No Users Available",style: TextStyle(color: Colors.white,fontSize: 18,fontWeight: FontWeight.w600),),
+  //                 ),
+  //               );
+  //           },
+  //         ),),
+  //     ],
+  //   );
+  // }
+ Widget _buildColumn() {
     return Column(
       children: <Widget>[
         new Flexible(
-          child: StreamBuilder(
-            stream: FirebaseFirestore.instance.collection("users").snapshots(),
-            builder: (context, snap) {
-              if (snap.hasData) {
-                // print(snap.data.documents[0]['name']);
-                return  new ListView.builder(
-                  padding: new EdgeInsets.only(top:8.0,bottom: 8),
-                  // reverse: true,
-                  itemBuilder: (_, int index) => buildCard(snap.data.documents[index]),
-                  itemCount: snap.data.documents.length,
-                );
-              }
-              else
-                return Center(
-                  child: Container(
-                    child: Text("No Users Available",style: TextStyle(color: Colors.white,fontSize: 18,fontWeight: FontWeight.w600),),
-                  ),
-                );
-            },
-          ),),
+          child: Container(  // Wrap with Container to handle height properly
+            child: ListView.builder(
+              controller: _scrollcontroller,
+              itemBuilder: (_, int index) {
+                return null;
+              
+                // Implement your logic for building list items
+              },
+              itemCount: 0,  // Change this to the actual item count
+            ),
+          ),
+        ),
       ],
     );
   }
-
   Widget buildCard (data) {
     return data['uid'] != uid ? Container(
       decoration: BoxDecoration(
@@ -160,11 +187,11 @@ class _ChatUserListState extends State<ChatUserList> with TickerProviderStateMix
             borderRadius: BorderRadius.circular(15.0)),
         tileColor: Colors.white10,
         onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) =>
-                ChatScreen(Code: data['uid'],Name: data['name'],Photo: data['photoUrl'],senderName:  name,senderUid: uid,senderEmail: data['email'],),),
-          );
+          // Navigator.push(
+          //   context,
+          //   MaterialPageRoute(builder: (context) =>
+          //       ChatScreen(Code: data['uid'],Name: data['name'],Photo: data['photoUrl'],senderName:  name!,senderUid: uid!,senderEmail: data['email'],),),
+          // );
         },
         title: Container(
           margin: EdgeInsets.all(12),

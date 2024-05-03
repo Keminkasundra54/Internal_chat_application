@@ -1,7 +1,7 @@
 import 'dart:io';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+// import 'package:cloud_firestore/cloud_firestore.dart';
+// import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:photo_view/photo_view.dart';
@@ -10,10 +10,12 @@ import 'package:cached_network_image/cached_network_image.dart';
 class FullPhoto extends StatelessWidget {
   final String url;
   final bool showEdit;
-  File imageFile;
+  late File imageFile;
   String uid;
-  FullPhoto({Key key, @required this.url,this.showEdit,this.uid}) : super(key: key);
+  // FullPhoto({Key? key, required this.url,required this.showEdit,required this.uid}) : super(key: key);
 
+  FullPhoto({Key? key, required this.url, required this.showEdit, required this.uid})
+      : super(key: key);
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -68,48 +70,68 @@ class FullPhoto extends StatelessWidget {
         });
   }
 
-  Future getImage(bool camera ,context) async {
-    ImagePicker imagePicker = ImagePicker();
-    PickedFile pickedFile;
+  // Future getImage(bool camera ,context) async {
+  //   ImagePicker imagePicker = ImagePicker();
+  //   PickedFile pickedFile;
+  //   if (camera) {
+  //     pickedFile = await imagePicker.getImage(source: ImageSource.camera);
+
+  //   } else {
+  //     pickedFile = await imagePicker.getImage(source: ImageSource.gallery);
+
+  //   }
+  //   imageFile = File(pickedFile.path);
+
+  //   uploadFile(imageFile,1);
+  //   Navigator.pop(context);
+  //   }
+
+Future getImage(bool camera, context) async {
+  final ImagePicker _picker = ImagePicker();
+  PickedFile? pickedFile;
+
+  try {
     if (camera) {
-      pickedFile = await imagePicker.getImage(source: ImageSource.camera);
-
+      pickedFile = await _picker.pickImage(source: ImageSource.camera) as PickedFile?;
     } else {
-      pickedFile = await imagePicker.getImage(source: ImageSource.gallery);
-
+      pickedFile = await _picker.pickImage(source: ImageSource.gallery) as PickedFile?;
     }
-    imageFile = File(pickedFile.path);
 
-    if (imageFile != null) {
-
-      uploadFile(imageFile,1);
+    if (pickedFile != null) {
+      imageFile = File(pickedFile.path);
+      uploadFile(imageFile, 1);
       Navigator.pop(context);
     }
+  } catch (e) {
+    print(e); // Handle errors during image picking
   }
+}
 
+
+   
   Future uploadFile(file,fileType) async {
-    String Url;
-    String fileName = DateTime.now().millisecondsSinceEpoch.toString();
-    StorageReference reference;
-    reference = FirebaseStorage.instance.ref().child('profilePics/$fileName');
-    StorageUploadTask uploadTask = reference.putFile(file);
-    StorageTaskSnapshot storageTaskSnapshot = await uploadTask.onComplete;
-    storageTaskSnapshot.ref.getDownloadURL().then((downloadUrl) {
-      Url = downloadUrl;
-      print(downloadUrl);
-      FirebaseFirestore.instance.collection('users').doc(uid).update(
-          { 'photoUrl': downloadUrl});
+    // String Url;
+    // String fileName = DateTime.now().millisecondsSinceEpoch.toString();
+    // StorageReference reference;
+    // reference = FirebaseStorage.instance.ref().child('profilePics/$fileName');
+    // StorageUploadTask uploadTask = reference.putFile(file);
+    // StorageTaskSnapshot storageTaskSnapshot = await uploadTask.onComplete;
+    // storageTaskSnapshot.ref.getDownloadURL().then((downloadUrl) {
+    //   Url = downloadUrl;
+    //   print(downloadUrl);
+    //   FirebaseFirestore.instance.collection('users').doc(uid).update(
+    //       { 'photoUrl': downloadUrl});
 
-    }, onError: (err) {
+    // }, onError: (err) {
 
-    });
+    // });
   }
 }
 
 class FullPhotoScreen extends StatefulWidget {
   final String url;
 
-  FullPhotoScreen({Key key, @required this.url}) : super(key: key);
+  FullPhotoScreen({Key? key, required this.url}) : super(key: key);
 
   @override
   State createState() => FullPhotoScreenState(url: url);
@@ -118,7 +140,7 @@ class FullPhotoScreen extends StatefulWidget {
 class FullPhotoScreenState extends State<FullPhotoScreen> {
   final String url;
 
-  FullPhotoScreenState({Key key, @required this.url});
+  FullPhotoScreenState({Key? key, required this.url});
 
   @override
   void initState() {
