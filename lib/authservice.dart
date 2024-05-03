@@ -247,9 +247,9 @@ class AuthService {
         // Handle connection events (optional)
 
         
-        // socket.on('connect', (_) => print('Connected'));
+        socket.on('connect', (_) => print('Connected'));
 
-        // socket.on('disconnect', (_) => print('Disconnected'));
+        socket.on('disconnect', (_) => print('Disconnected'));
       } catch (e) {
         print('Error connecting to Socket.io server: $e');
       }
