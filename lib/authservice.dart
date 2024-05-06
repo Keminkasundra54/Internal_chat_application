@@ -403,13 +403,18 @@ class AuthService {
     final String id = googleUser.id ?? '';
 
     // Create User object
-    final User currentUser = User(
+    // final User currentUser = User(
+    //   name: displayName,
+    //   email: email,
+    //   photoUrl: photoUrl,
+    //   id: id,
+    // );this is true
+   final User currentUser = User(
       name: displayName,
       email: email,
-      photoUrl: photoUrl,
+      photoUrl: photoUrl.url,
       id: id,
     );
-
     return currentUser;
   }
 
