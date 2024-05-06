@@ -8,14 +8,21 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 
 class User {
-  final String name;
-  final String email;
+  String name;
+  String email;
+  String photoUrl;
+  String id;
   // Other user attributes
 
-  User({required this.name, required this.email});
+  User(
+      {required this.name,
+      required this.email,
+      required this.photoUrl,
+      required this.id});
 }
 
 late IO.Socket socket;
+final FlutterSecureStorage _secureStorage = FlutterSecureStorage();
 
 const String clientId =
     '37266721800-s6km4jf18vmnnf4t76bieg5pejud2odr.apps.googleusercontent.com';
@@ -193,73 +200,217 @@ class AuthService {
   //   }
   // }
 
-  Future<User?> googleSignin(BuildContext context) async {
-    User? currentUser;
+//   Future<User?> googleSignin(BuildContext context) async {
+//     User? currentUser;
 
+//     try {
+//       final GoogleSignIn _googleSignIn = GoogleSignIn();
+//       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+
+//       final GoogleSignInAuthentication googleAuth =
+//           await googleUser!.authentication;
+//       print(googleAuth);
+
+//       final AuthCredential credential = GoogleAuthProvider.credential(
+//         accessToken: googleAuth.accessToken,
+//         idToken: googleAuth.idToken,
+//       );
+//       print("credential : $credential");
+//       print("googleAuth.accessToken : ${googleAuth.accessToken}");
+//       print("googleAuth.idToken : ${googleAuth.idToken}");
+//       print(googleUser);
+//       print(googleUser?.displayName);
+//       print(googleUser.runtimeType);
+//       print('ok');
+
+//       if (googleUser == null) {
+//         return currentUser; // Handle sign-in cancellation
+//       }
+
+//       // Process user data
+//       // currentUser = User(
+//       //   name: googleUser?.displayName ?? "",
+//       //   email: googleUser?.email ?? "",
+//       //   // Other user attributes
+//       // );
+
+//       // Store user data locally or perform any necessary actions
+//       _googleSignIn.signInSilently();
+
+//       try {
+//         // Replace with your actual Socket.io server URL
+//         // socket = IO.io('http://localhost:3000' , <String, dynamic>{
+//         socket = IO.io('http://192.168.1.13:8080', <String, dynamic>{
+//           'transports': ['websocket'], // Specify transport (optional)
+//         });
+//         socket.connect();
+//         print('Connected to Socket.io server!');
+//         socket.emit('chat_message', '$googleUser');
+// //         socket.on(
+// //             'messageSuccess', (data) => {print(data), currentUser = data,
+// //             Map<String, dynamic> userData = data as Map<String, dynamic>;
+// // String displayName = userData['displayName'];
+// // String email = userData['email'];});
+
+//         // socket.on('messageSuccess', (data) {
+//         //   print('data$data');
+
+//         //   // Extract user data from the received map
+//         //   Map<String, dynamic> userData = data as Map<String, dynamic>;
+//         //   String displayName = userData['displayName'];
+//         //   String email = userData['email'];
+//         //   String photoUrl = userData['photoUrl'];
+//         //   String id = userData['id'];
+
+//         //   currentUser =
+//         //       User(name: displayName, email: email, photoUrl: photoUrl, id: id);
+//         //   print(currentUser);
+
+//         // });
+//         socket.on('connect', (_) => print('Connected'));
+
+//         socket.on('messageSuccess', (data) {
+//           print('Received data: $data');
+
+//           // Check if the data is of type Map<String, dynamic>
+//           // if (data is Map<String, dynamic>) {
+//           //   // Extract user data from the received map
+//           //   String displayName = data['displayName'];
+//           //   String email = data['email'];
+//           //   String photoUrl = data['photoUrl'];
+//           //   String id = data['id'];
+
+//           //   // Update currentUser with the received data
+//           //   // currentUser = User(
+//           //   //   name: displayName,
+//           //   //   email: email,
+//           //   //   photoUrl: photoUrl,
+//           //   //   id: id,
+//           //   // );
+//           //   if (currentUser == null) {
+//           //     currentUser = User(
+//           //       name: displayName,
+//           //       email: email,
+//           //       photoUrl: photoUrl,
+//           //       id: id,
+//           //     );
+//           //   } else {
+//           //     // Update currentUser with the received data
+//           //     currentUser!.name = displayName;
+//           //     currentUser!.email = email;
+//           //     currentUser!.photoUrl = photoUrl;
+//           //     currentUser!.id = id;
+//           //   }
+//           //   print('Updated currentUser: $currentUser');
+//           // } else {
+//           //   print('Received data is not in the expected format.');
+//           // }
+
+//           if (data is Map<String, dynamic>) {
+//             // Extract user data from the received map
+//             String? displayName = data['displayName'];
+//             String? email = data['email'];
+//             String? photoUrl = data['photoUrl'];
+//             String? id = data['id'];
+
+//             // Ensure all required data is present
+//             if (displayName != null &&
+//                 email != null &&
+//                 photoUrl != null &&
+//                 id != null) {
+//               // Update currentUser with the received data
+//               currentUser = User(
+//                 name: displayName,
+//                 email: email,
+//                 photoUrl: photoUrl,
+//                 id: id,
+//               );
+
+//               print('Updated currentUser: $currentUser');
+//             } else {
+//               print('Received data is missing required fields.');
+//             }
+//           } else {
+//             print('Received data is not in the expected format.');
+//           }
+//         });
+//         // Handle connection events
+//         socket.on('disconnect', (_) => print('Disconnected'));
+
+//         return currentUser;
+//         // Return currentUser if it's not null
+//         // socket.on('chat_message')
+//         // socket.emit('chat_message', {'message': 'Hello, World!'});
+// // socket.emit(event)
+//         // Handle connection events (optional)
+//       } catch (e) {
+//         print('Error connecting to Socket.io server: $e');
+//         return currentUser;
+//       }
+//     } catch (e) {
+//       print(e);
+//       print("Error during Google sign-in: $e");
+
+//       return currentUser;
+//     }
+//   }
+
+  Future<User?> googleSignin(BuildContext context) async {
     try {
+      // Initialize Google Sign-In
       final GoogleSignIn _googleSignIn = GoogleSignIn();
+
+      // Start Google Sign-In process
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
 
-      final GoogleSignInAuthentication googleAuth =
-          await googleUser!.authentication;
-      print(googleAuth);
-
-      final AuthCredential credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-      print("credential : $credential");
-      print("googleAuth.accessToken : ${googleAuth.accessToken}");
-      print("googleAuth.idToken : ${googleAuth.idToken}");
-      print(googleUser);
-      print(googleUser?.displayName);
-      print(googleUser.runtimeType);
-      print('ok');
-
       if (googleUser == null) {
-        return currentUser; // Handle sign-in cancellation
+        // Handle sign-in cancellation
+        print('Sign-in cancelled.');
+        return null;
       }
 
-      // Process user data
-      // currentUser = User(
-      //   name: googleUser?.displayName ?? "",
-      //   email: googleUser?.email ?? "",
-      //   // Other user attributes
-      // );
+      // Get authentication data
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
 
-      // Store user data locally or perform any necessary actions
-      _googleSignIn.signInSilently();
+      // Get user details
 
-      try {
-        // Replace with your actual Socket.io server URL
-        // socket = IO.io('http://localhost:3000' , <String, dynamic>{
-        socket = IO.io('http://192.168.1.13:8080', <String, dynamic>{
-          'transports': ['websocket'], // Specify transport (optional)
-        });
-        socket.connect();
-        print('Connected to Socket.io server!');
-        socket.emit('chat_message', '$googleUser');
-        socket.on(
-            'messageSuccess', (data) => {print(data)});
-        // socket.on('chat_message')
-        // socket.emit('chat_message', {'message': 'Hello, World!'});
-// socket.emit(event)
-        // Handle connection events (optional)
+      final User currentUser = await getUserDetails(googleUser, googleAuth);
+      await saveUserDataLocally(currentUser);
+      // Perform additional actions if needed
 
-        
-        socket.on('connect', (_) => print('Connected'));
-
-        socket.on('disconnect', (_) => print('Disconnected'));
-      } catch (e) {
-        print('Error connecting to Socket.io server: $e');
-      }
       return currentUser;
     } catch (e) {
-      print(e);
-      print("Error during Google sign-in: $e");
-
-      return currentUser;
+      // Handle sign-in errors
+      print('Error during Google sign-in: $e');
+      return null;
     }
+  }
+
+  Future<void> saveUserDataLocally(User user) async {
+    await _secureStorage.write(key: 'user_name', value: user.name);
+    await _secureStorage.write(key: 'user_email', value: user.email);
+    await _secureStorage.write(key: 'user_photoUrl', value: user.photoUrl);
+    await _secureStorage.write(key: 'user_id', value: user.id);
+  }
+
+  Future<User> getUserDetails(GoogleSignInAccount googleUser,
+      GoogleSignInAuthentication googleAuth) async {
+    // Extract user data from GoogleSignInAccount
+    final String displayName = googleUser.displayName ?? '';
+    final String email = googleUser.email ?? '';
+    final String photoUrl = googleUser.photoUrl ?? '';
+    final String id = googleUser.id ?? '';
+
+    // Create User object
+    final User currentUser = User(
+      name: displayName,
+      email: email,
+      photoUrl: photoUrl,
+      id: id,
+    );
+
+    return currentUser;
   }
 
   Future<bool> googleSignout() async {
