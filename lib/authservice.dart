@@ -1,6 +1,8 @@
 // import 'package:cloud_firestore/cloud_firestore.dart';
 // import 'package:firebase_auth/firebase_auth.dart';
 // import 'package:firebase_database/firebase_database.dart';
+import 'dart:convert';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -19,6 +21,15 @@ class User {
       required this.email,
       required this.photoUrl,
       required this.id});
+
+        Map<String, dynamic> toJson() {
+    return {
+      'name': name,
+      'email': email,
+      'photoUrl': photoUrl,
+      'id': id,
+    };
+  }
 }
 
 late IO.Socket socket;
@@ -378,6 +389,7 @@ class AuthService {
       final User currentUser = await getUserDetails(googleUser, googleAuth);
       await saveUserDataLocally(currentUser);
       // Perform additional actions if needed
+      _googleSignIn.signInSilently();
 
       return currentUser;
     } catch (e) {
@@ -388,10 +400,11 @@ class AuthService {
   }
 
   Future<void> saveUserDataLocally(User user) async {
-    await _secureStorage.write(key: 'user_name', value: user.name);
-    await _secureStorage.write(key: 'user_email', value: user.email);
-    await _secureStorage.write(key: 'user_photoUrl', value: user.photoUrl);
-    await _secureStorage.write(key: 'user_id', value: user.id);
+    await _secureStorage.write(key: 'user', value: user.toString());
+    // await _secureStorage.write(key: 'user_name', value: user.name);
+    // await _secureStorage.write(key: 'user_email', value: user.email);
+    // await _secureStorage.write(key: 'user_photoUrl', value: user.photoUrl);
+    // await _secureStorage.write(key: 'user_id', value: user.id);
   }
 
   Future<User> getUserDetails(GoogleSignInAccount googleUser,
@@ -403,18 +416,26 @@ class AuthService {
     final String id = googleUser.id ?? '';
 
     // Create User object
-    // final User currentUser = User(
-    //   name: displayName,
-    //   email: email,
-    //   photoUrl: photoUrl,
-    //   id: id,
-    // );this is true
-   final User currentUser = User(
+    final User currentUser = User(
       name: displayName,
       email: email,
-      photoUrl: photoUrl.url,
+      photoUrl: photoUrl,
       id: id,
     );
+
+    //       print('Connected to Socket.io server!');
+    // socket = IO.io('http://localhost:3000' , <String, dynamic>{
+    socket = IO.io('http://192.168.1.13:8080', <String, dynamic>{
+      'transports': ['websocket'], // Specify transport (optional)
+    });
+    socket.connect();
+    socket.on('connect', (_) => print('Connected'));
+
+    print('Connected to Socket.io server!');
+    print(googleUser);
+     final userJson = jsonEncode(currentUser.toJson()); 
+    socket.emit('chat_message', userJson);
+    socket.on('disconnect', (_) => print('Disconnected'));
     return currentUser;
   }
 
