@@ -22,14 +22,14 @@ class User {
       required this.photoUrl,
       required this.id});
 
-        Map<String, dynamic> toJson() {
-    return {
-      'name': name,
-      'email': email,
-      'photoUrl': photoUrl,
-      'id': id,
-    };
-  }
+  // Map<String, dynamic> toJson() {
+  //   return {
+  //     'name': name,
+  //     'email': email,
+  //     'photoUrl': photoUrl,
+  //     'id': id,
+  //   };
+  // }
 }
 
 late IO.Socket socket;
@@ -389,6 +389,20 @@ class AuthService {
       final User currentUser = await getUserDetails(googleUser, googleAuth);
       await saveUserDataLocally(currentUser);
       // Perform additional actions if needed
+
+      socket = IO.io('http://192.168.1.13:8080', <String, dynamic>{
+        'transports': ['websocket'],
+        // "autoConnect": false,
+        // 'timeout': 5000, 'connect timeout': 5000 
+      });
+      socket.connect();
+      socket.on('connect', (_) => print('Connected'));
+
+      print('Connected to Socket.io server!');
+      print(googleUser);
+      // final userJson = jsonEncode(currentUser.toJson());
+      socket.emit('chat_message', googleUser.toString());
+      socket.on('disconnect', (_) => print('Disconnected'));
       _googleSignIn.signInSilently();
 
       return currentUser;
@@ -425,17 +439,18 @@ class AuthService {
 
     //       print('Connected to Socket.io server!');
     // socket = IO.io('http://localhost:3000' , <String, dynamic>{
-    socket = IO.io('http://192.168.1.13:8080', <String, dynamic>{
-      'transports': ['websocket'], // Specify transport (optional)
-    });
-    socket.connect();
-    socket.on('connect', (_) => print('Connected'));
+    // socket = IO.io('http://192.168.1.13:8080', <String, dynamic>{
+    //   'transports': ['websocket'],
+    //   "autoConnect": false, // Specify transport (optional)
+    // });
+    // socket.connect();
+    // socket.on('connect', (_) => print('Connected'));
 
-    print('Connected to Socket.io server!');
-    print(googleUser);
-     final userJson = jsonEncode(currentUser.toJson()); 
-    socket.emit('chat_message', userJson);
-    socket.on('disconnect', (_) => print('Disconnected'));
+    // print('Connected to Socket.io server!');
+    // print(googleUser);
+    // // final userJson = jsonEncode(currentUser.toJson());
+    // socket.emit('chat_message', googleUser.toString());
+    // socket.on('disconnect', (_) => print('Disconnected'));
     return currentUser;
   }
 

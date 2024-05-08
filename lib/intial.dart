@@ -42,7 +42,7 @@ class _InitialPageState extends State<InitialPage> {
       });
       socket.connect();
       print('Connected to Socket.io server!');
-      // socket.emit('chat_message', 'test');
+      socket.emit('chat_message', 'test');
       // socket.on('messageSuccess', (data) => print(data));
       // socket.on('chat_message')
       // socket.emit('chat_message', {'message': 'Hello, World!'});
@@ -53,9 +53,9 @@ class _InitialPageState extends State<InitialPage> {
       socket.on('disconnect', (_) => print('Disconnected'));
 
       // Check for logged-in status using your own logic (replace with your implementation)
-      // bool isLoggedIn =
-      //     await checkLoggedInStatus(); // Implement checkLoggedInStatus
-      // navigateToAppropriatePage(isLoggedIn);
+      bool isLoggedIn =
+          await checkLoggedInStatus(); // Implement checkLoggedInStatus
+      navigateToAppropriatePage(isLoggedIn);
     } catch (e) {
       print('Error connecting to Socket.io server: $e');
     }
