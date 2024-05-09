@@ -108,7 +108,7 @@ class _InitialPageState extends State<InitialPage> {
 
   @override
   void dispose() {
-    socket.disconnect(); // Disconnect from Socket.io server on widget disposal
+    // socket.disconnect(); // Disconnect from Socket.io server on widget disposal
     super.dispose();
   }
 

@@ -393,7 +393,6 @@ class AuthService {
       socket = IO.io('http://192.168.1.13:8080', <String, dynamic>{
         'transports': ['websocket'],
         // "autoConnect": false,
-        // 'timeout': 5000, 'connect timeout': 5000 
       });
       socket.connect();
       socket.on('connect', (_) => print('Connected'));
@@ -401,8 +400,18 @@ class AuthService {
       print('Connected to Socket.io server!');
       print(googleUser);
       // final userJson = jsonEncode(currentUser.toJson());
-      socket.emit('chat_message', googleUser.toString());
+      print(socket);
+      if (socket.connected) {
+        socket.emit('chat_message', googleUser.toString());
+      } else {
+        print('WebSocket connection is not established.');
+      }
+
+      // socket.emit('chat_message', googleUser.toString());
       socket.on('disconnect', (_) => print('Disconnected'));
+
+  
+      
       _googleSignIn.signInSilently();
 
       return currentUser;
