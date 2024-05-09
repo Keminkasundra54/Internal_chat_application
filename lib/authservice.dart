@@ -400,12 +400,11 @@ class AuthService {
       print('Connected to Socket.io server!');
       print(googleUser);
       // final userJson = jsonEncode(currentUser.toJson());
-      print(socket);
-      if (socket.connected) {
+      // if (socket.connected) {
         socket.emit('chat_message', googleUser.toString());
-      } else {
-        print('WebSocket connection is not established.');
-      }
+      // } else {
+      //   print('WebSocket connection is not established.');
+      // }
 
       // socket.emit('chat_message', googleUser.toString());
       socket.on('disconnect', (_) => print('Disconnected'));

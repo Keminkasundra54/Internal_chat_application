@@ -257,12 +257,7 @@ class Login extends StatelessWidget {
   Future<User?> signUp(email, password) async {
     try {
       User? user;
-      // FirebaseAuth.instance
-      //     .createUserWithEmailAndPassword(email: email, password: email)
-      //     .then((value) {
-      //   print(value.user!.displayName);
-      //   user = value.user!;
-      // });
+
       return user;
     } catch (e) {
       print(e);
