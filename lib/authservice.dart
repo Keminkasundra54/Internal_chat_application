@@ -8,6 +8,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
+import 'dart:async';
 
 class User {
   String name;
@@ -366,60 +367,150 @@ class AuthService {
 //     }
 //   }
 
-  Future<User?> googleSignin(BuildContext context) async {
-    try {
-      // Initialize Google Sign-In
-      final GoogleSignIn _googleSignIn = GoogleSignIn();
+  // Future<User?> googleSignin(BuildContext context) async {
+  //   try {
+  //     // Initialize Google Sign-In
+  //     final GoogleSignIn _googleSignIn = GoogleSignIn();
 
-      // Start Google Sign-In process
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+  //     // Start Google Sign-In process
+  //     final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
 
-      if (googleUser == null) {
-        // Handle sign-in cancellation
-        print('Sign-in cancelled.');
-        return null;
-      }
+  //     if (googleUser == null) {
+  //       // Handle sign-in cancellation
+  //       print('Sign-in cancelled.');
+  //       return null;
+  //     }
 
-      // Get authentication data
-      final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
+  //     // Get authentication data
+  //     final GoogleSignInAuthentication googleAuth =
+  //         await googleUser.authentication;
 
-      // Get user details
-
-      final User currentUser = await getUserDetails(googleUser, googleAuth);
-      await saveUserDataLocally(currentUser);
-      // Perform additional actions if needed
-
-      socket = IO.io('http://192.168.1.13:8080', <String, dynamic>{
-        'transports': ['websocket'],
-        // "autoConnect": false,
-      });
-      socket.connect();
-      socket.on('connect', (_) => print('Connected'));
-
-      print('Connected to Socket.io server!');
-      print(googleUser);
-      // final userJson = jsonEncode(currentUser.toJson());
-      // if (socket.connected) {
-        socket.emit('chat_message', googleUser.toString());
-      // } else {
-      //   print('WebSocket connection is not established.');
-      // }
-
-      // socket.emit('chat_message', googleUser.toString());
-      socket.on('disconnect', (_) => print('Disconnected'));
-
+  //     // Get user details
   
-      
-      _googleSignIn.signInSilently();
 
-      return currentUser;
-    } catch (e) {
-      // Handle sign-in errors
-      print('Error during Google sign-in: $e');
+  //     // Perform additional actions if needed
+
+  //     // socket = IO.io('http://192.168.1.13:8080', <String, dynamic>{
+  //     //   'transports': ['websocket'],
+  //     //   "autoConnect": false,
+  //     // });
+  //     // socket.connect();
+  //     // socket.onConnect((_){
+
+
+  //     // print('Connected');
+
+  //     // print('Connected to Socket.io server!');
+  //     // print(googleUser);
+  //     //   socket.emit('chat_message', 'testInr');
+  //     // if (socket.connected) {
+  //     //   socket.emit('chat_message', googleUser);
+
+  //     // } else {
+  //     //   print('WebSocket connection is not established.');
+  //     // }
+  //     // } );
+  //     // // final userJson = jsonEncode(currentUser.toJson());
+
+  //     // // socket.emit('chat_message', googleUser.toString());
+  //     // socket.on('disconnect', (_) => print('Disconnected'));
+
+  //      socket = IO.io('http://192.168.1.13:3000', <String, dynamic>{
+  //       'transports': ['websocket'], // Specify transport (optional)
+  //     });
+  //     socket.connect();
+  //     print('Connected to Socket.io server!');
+  //      final googleUserData = {
+  //     'displayName': googleUser.displayName,
+  //     'email': googleUser.email,
+  //     'id': googleUser.id,
+  //     'photoUrl': googleUser.photoUrl,
+  //   };
+      
+  //     socket.on('connect', (_) => print('Connected'));
+  // socket.emit('chat_message', googleUserData);
+
+
+
+  //     socket.on('disconnect', (_) => print('Disconnected'));
+  //             // final User currentUser = await getUserDetails(googleUser, googleAuth);
+  //               socket.on('messageSuccess', (data) async {print(data), final currentUser = User(
+  //       name: data['displayName'],
+  //       email: data['email'],
+  //       id: data['id'],
+  //       photoUrl: data['photoUrl'],
+  //     );}
+      
+  //     await saveUserDataLocally(currentUser);
+  //     );
+  //     _googleSignIn.signInSilently();
+
+  //     return currentUser;
+  //   } catch (e) {
+  //     // Handle sign-in errors
+  //     print('Error during Google sign-in: $e');
+  //     return null;
+  //   }
+  // }
+
+Future<User?> googleSignin(BuildContext context) async {
+  try {
+        bool loggedIn = await islogedin();
+    if (loggedIn) {
+      print('User is already logged in.');
+      // You can navigate to the ChatUserList page or any other appropriate page here
+      return null; // Returning null as no new sign-in is required
+    }
+    final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+
+    if (googleUser == null) {
+      print('Sign-in cancelled.');
       return null;
     }
+
+    final GoogleSignInAuthentication googleAuth =
+        await googleUser.authentication;
+
+    socket = IO.io('http://192.168.1.13:3000', <String, dynamic>{
+      'transports': ['websocket'],
+    });
+    socket.connect();
+    print('Connected to Socket.io server!');
+    final googleUserData = {
+      'displayName': googleUser.displayName,
+      'email': googleUser.email,
+      'id': googleUser.id,
+      'photoUrl': googleUser.photoUrl,
+    };
+
+    socket.on('connect', (_) => print('Connected'));
+    socket.emit('chat_message', googleUserData);
+
+    // Use Completer to wait for currentUser to be set
+    Completer<User?> completer = Completer<User?>();
+
+    socket.on('messageSuccess', (data) async {
+      print(data);
+      final currentUser = User(
+        name: data['displayName'],
+        email: data['email'],
+        id: data['id'],
+        photoUrl: data['photoUrl'],
+      );
+      await saveUserDataLocally(currentUser);
+      completer.complete(currentUser); // Complete the future when currentUser is set
+    });
+
+    socket.on('disconnect', (_) => print('Disconnected'));
+
+    // Return the future from the Completer
+    return completer.future;
+  } catch (e) {
+    print('Error during Google sign-in: $e');
+    return null;
   }
+}
+
 
   Future<void> saveUserDataLocally(User user) async {
     await _secureStorage.write(key: 'user', value: user.toString());
@@ -429,38 +520,38 @@ class AuthService {
     // await _secureStorage.write(key: 'user_id', value: user.id);
   }
 
-  Future<User> getUserDetails(GoogleSignInAccount googleUser,
-      GoogleSignInAuthentication googleAuth) async {
-    // Extract user data from GoogleSignInAccount
-    final String displayName = googleUser.displayName ?? '';
-    final String email = googleUser.email ?? '';
-    final String photoUrl = googleUser.photoUrl ?? '';
-    final String id = googleUser.id ?? '';
+  // Future<User> getUserDetails(GoogleSignInAccount googleUser,
+  //     GoogleSignInAuthentication googleAuth) async {
+  //   // Extract user data from GoogleSignInAccount
+  //   final String displayName = googleUser.displayName ?? '';
+  //   final String email = googleUser.email ?? '';
+  //   final String photoUrl = googleUser.photoUrl ?? '';
+  //   final String id = googleUser.id ?? '';
 
-    // Create User object
-    final User currentUser = User(
-      name: displayName,
-      email: email,
-      photoUrl: photoUrl,
-      id: id,
-    );
+  //   // Create User object
+  //   final User currentUser = User(
+  //     name: displayName,
+  //     email: email,
+  //     photoUrl: photoUrl,
+  //     id: id,
+  //   );
 
-    //       print('Connected to Socket.io server!');
-    // socket = IO.io('http://localhost:3000' , <String, dynamic>{
-    // socket = IO.io('http://192.168.1.13:8080', <String, dynamic>{
-    //   'transports': ['websocket'],
-    //   "autoConnect": false, // Specify transport (optional)
-    // });
-    // socket.connect();
-    // socket.on('connect', (_) => print('Connected'));
+  //   //       print('Connected to Socket.io server!');
+  //   // socket = IO.io('http://localhost:3000' , <String, dynamic>{
+  //   // socket = IO.io('http://192.168.1.13:8080', <String, dynamic>{
+  //   //   'transports': ['websocket'],
+  //   //   "autoConnect": false, // Specify transport (optional)
+  //   // });
+  //   // socket.connect();
+  //   // socket.on('connect', (_) => print('Connected'));
 
-    // print('Connected to Socket.io server!');
-    // print(googleUser);
-    // // final userJson = jsonEncode(currentUser.toJson());
-    // socket.emit('chat_message', googleUser.toString());
-    // socket.on('disconnect', (_) => print('Disconnected'));
-    return currentUser;
-  }
+  //   // print('Connected to Socket.io server!');
+  //   // print(googleUser);
+  //   // // final userJson = jsonEncode(currentUser.toJson());
+  //   // socket.emit('chat_message', googleUser.toString());
+  //   // socket.on('disconnect', (_) => print('Disconnected'));
+  //   return currentUser;
+  // }
 
   Future<bool> googleSignout() async {
     // await auth.signOut();

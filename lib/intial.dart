@@ -35,24 +35,21 @@ class _InitialPageState extends State<InitialPage> {
 
   Future<void> connectToServer() async {
     try {
-      // Replace with your actual Socket.io server URL
       // socket = IO.io('http://localhost:3000' , <String, dynamic>{
-      socket = IO.io('http://192.168.1.13:3000', <String, dynamic>{
-        'transports': ['websocket'], // Specify transport (optional)
-      });
-      socket.connect();
-      print('Connected to Socket.io server!');
-      socket.emit('chat_message', 'test');
-      // socket.on('messageSuccess', (data) => print(data));
-      // socket.on('chat_message')
-      // socket.emit('chat_message', {'message': 'Hello, World!'});
-// socket.emit(event)
-      // Handle connection events (optional)
-      socket.on('connect', (_) => print('Connected'));
+      // socket = IO.io('http://192.168.1.13:3000', <String, dynamic>{
+      //   'transports': ['websocket'], // Specify transport (optional)
+      // });
+      // socket.connect();
+      // print('Connected to Socket.io server!');
+      // socket.emit('chat_message', 'test');
 
-      socket.on('disconnect', (_) => print('Disconnected'));
+      // socket.on('connect', (_) => print('Connected'));
+
+      // socket.on('disconnect', (_) => print('Disconnected'));
 
       // Check for logged-in status using your own logic (replace with your implementation)
+
+      
       bool isLoggedIn =
           await checkLoggedInStatus(); // Implement checkLoggedInStatus
       navigateToAppropriatePage(isLoggedIn);
@@ -62,10 +59,17 @@ class _InitialPageState extends State<InitialPage> {
   }
 
   Future<bool> checkLoggedInStatus() async {
-    // Implement your logic to check if the user is logged in (e.g., using shared preferences)
-    // Replace with your actual implementation
-    return await Future.delayed(
-        Duration(seconds: 1), () => false); // Simulate a delay and return false
+   
+    // return await Future.delayed(
+        // Duration(seconds: 1), () => false); // Simulate a delay and return false
+
+         try {
+    bool isLoggedIn = await authService.islogedin();
+    return isLoggedIn;
+  } catch (e) {
+    print('Error checking logged-in status: $e');
+    return false;
+  }
   }
 
   void navigateToAppropriatePage(bool isLoggedIn) {
