@@ -16,6 +16,31 @@ class ChatUserList extends StatefulWidget {
   }
 }
 
+class User {
+  String name;
+  String email;
+  String photoUrl;
+  String id;
+  String googleId;
+  // Other user attributes
+
+  User(
+      {required this.name,
+      required this.email,
+      required this.photoUrl,
+      required this.id,
+      required this.googleId});
+
+  // Map<String, dynamic> toJson() {
+  //   return {
+  //     'name': name,
+  //     'email': email,
+  //     'photoUrl': photoUrl,
+  //     'id': id,
+  //   };
+  // }
+}
+
 class _ChatUserListState extends State<ChatUserList>
     with TickerProviderStateMixin, WidgetsBindingObserver {
   final secureStorage = new FlutterSecureStorage();
