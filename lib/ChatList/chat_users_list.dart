@@ -1,11 +1,11 @@
-
 // import 'package:cloud_firestore/cloud_firestore.dart';
 // import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:socket_io_client/socket_io_client.dart' as IO;
 
-
+late IO.Socket socket;
 
 class ChatUserList extends StatefulWidget {
   ChatUserList({Key? key}) : super(key: key);
@@ -16,17 +16,19 @@ class ChatUserList extends StatefulWidget {
   }
 }
 
-class _ChatUserListState extends State<ChatUserList> with TickerProviderStateMixin,WidgetsBindingObserver {
-    final secureStorage = new FlutterSecureStorage();
+class _ChatUserListState extends State<ChatUserList>
+    with TickerProviderStateMixin, WidgetsBindingObserver {
+  final secureStorage = new FlutterSecureStorage();
 
   final TextEditingController _messageTextController = TextEditingController();
   final GlobalKey<AnimatedListState> _listKey = GlobalKey();
   bool isscroolvisible = false;
   final _scrollcontroller = ScrollController();
   // DatabaseReference rootRef = FirebaseDatabase.instance.reference();
-  String? uid ='';
-  String? email ='';
+  String? uid = '';
+  String? email = '';
   String? name = '';
+  var userInfo;
   AppLifecycleState _lastLifecycleState = AppLifecycleState.resumed;
   @override
   void initState() {
@@ -37,17 +39,19 @@ class _ChatUserListState extends State<ChatUserList> with TickerProviderStateMix
     // });
     super.initState();
   }
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     setState(() {
       _lastLifecycleState = state;
-      if (state == AppLifecycleState.detached || state == AppLifecycleState.paused) {
+      if (state == AppLifecycleState.detached ||
+          state == AppLifecycleState.paused) {
         print('offline');
         // FirebaseFirestore.instance
         //     .collection('users')
         //     .doc(uid)
         //     .update({'onlineStatus': "last seen at ${DateFormat('MMM dd').add_jm().format(DateTime.now())}"});
-      } else if (state == AppLifecycleState.resumed){
+      } else if (state == AppLifecycleState.resumed) {
         print('online');
         // FirebaseFirestore.instance
         //     .collection('users')
@@ -57,15 +61,40 @@ class _ChatUserListState extends State<ChatUserList> with TickerProviderStateMix
       print("ssssss $state");
     });
   }
-  getdata()async {
-    uid = await secureStorage.read(key: "id");
-    email = await secureStorage.read(key: "email");
-    name = await secureStorage.read(key: "name");
+
+  getdata() async {
+    userInfo = await secureStorage.read(key: "user");
+    print(userInfo);
+    uid = userInfo.id;
+    email = userInfo.email;
+    name = userInfo.name;
+    print(uid);
+    print(email);
+    print(name);
     // FirebaseFirestore.instance
     //     .collection('users')
     //     .doc(uid)
     //     .update({'onlineStatus': "Online"});
+
+    socket = IO.io('http://192.168.1.13:3000', <String, dynamic>{
+      'transports': ['websocket'],
+    });
+    socket.connect();
+    print('Connected to Socket.io server!');
+
+    socket.on('connect', (_) => print('Connected'));
+    socket.emit('user', email);
+
+    // Use Completer to wait for currentUser to be set
+    // Completer<User?> completer = Completer<User?>();
+
+    socket.on('userData', (data) async {
+      print(data);
+    });
+
+    socket.on('disconnect', (_) => print('Disconnected'));
   }
+
   @override
   void dispose() {
     _messageTextController.dispose();
@@ -74,14 +103,16 @@ class _ChatUserListState extends State<ChatUserList> with TickerProviderStateMix
 
   @override
   Widget build(BuildContext context) {
-
     return WillPopScope(
         onWillPop: () {
           SystemNavigator.pop();
           return Future.value(true); // Allow back navigation
         },
-        child:
-        Scaffold(appBar: _buildAppBar(context), body: _buildColumn(),backgroundColor: Colors.black,));
+        child: Scaffold(
+          appBar: _buildAppBar(context),
+          body: _buildColumn(),
+          backgroundColor: Colors.black,
+        ));
   }
 
   // Widget _buildAppBar(BuildContext context) {
@@ -100,13 +131,16 @@ class _ChatUserListState extends State<ChatUserList> with TickerProviderStateMix
         ],
       ),
       actions: [
-        IconButton(icon: Icon(Icons.account_circle), onPressed: () {
-          // Navigator.push(
-          //     context,
-          //     MaterialPageRoute(
-          //         builder: (context) => Profile(url: "AppBar",uid: uid!, image: '',)));
-        },padding: EdgeInsets.only(right: 25),),
-
+        IconButton(
+          icon: Icon(Icons.account_circle),
+          onPressed: () {
+            // Navigator.push(
+            //     context,
+            //     MaterialPageRoute(
+            //         builder: (context) => Profile(url: "AppBar",uid: uid!, image: '',)));
+          },
+          padding: EdgeInsets.only(right: 25),
+        ),
       ],
       backgroundColor: Colors.white10,
     );
@@ -153,88 +187,92 @@ class _ChatUserListState extends State<ChatUserList> with TickerProviderStateMix
   //     ],
   //   );
   // }
- Widget _buildColumn() {
+  Widget _buildColumn() {
     return Column(
       children: <Widget>[
         new Flexible(
-          child: Container(  // Wrap with Container to handle height properly
+          child: Container(
+            // Wrap with Container to handle height properly
             child: ListView.builder(
               controller: _scrollcontroller,
               itemBuilder: (_, int index) {
                 return null;
-              
+
                 // Implement your logic for building list items
               },
-              itemCount: 0,  // Change this to the actual item count
+              itemCount: 0, // Change this to the actual item count
             ),
           ),
         ),
       ],
     );
   }
-  Widget buildCard (data) {
-    return data['uid'] != uid ? Container(
-      decoration: BoxDecoration(
-        // color: Colors.white10,
-        borderRadius: BorderRadius.all(
-          Radius.circular(15.0),
-        ),
-      ),
-      margin: EdgeInsets.only(top: 7),
-      child:
-      ListTile(
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15.0)),
-        tileColor: Colors.white10,
-        onTap: () {
-          // Navigator.push(
-          //   context,
-          //   MaterialPageRoute(builder: (context) =>
-          //       ChatScreen(Code: data['uid'],Name: data['name'],Photo: data['photoUrl'],senderName:  name!,senderUid: uid!,senderEmail: data['email'],),),
-          // );
-        },
-        title: Container(
-          margin: EdgeInsets.all(12),
-          child:  Row(
-            children: [
-              Container(
-                  width: 55.0,
-                  height: 55.0,
-                  decoration: new BoxDecoration(
-                      shape: BoxShape
-                          .circle,
-                      color: Colors
-                          .black12,
-                      image: new DecorationImage(
-                          fit: BoxFit
-                              .cover,
-                          image: NetworkImage(
-                              data['photoUrl'])))),
-              Container(
-                margin: EdgeInsets.only(left: 15),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.start,
+
+  Widget buildCard(data) {
+    return data['uid'] != uid
+        ? Container(
+            decoration: BoxDecoration(
+              // color: Colors.white10,
+              borderRadius: BorderRadius.all(
+                Radius.circular(15.0),
+              ),
+            ),
+            margin: EdgeInsets.only(top: 7),
+            child: ListTile(
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(15.0)),
+              tileColor: Colors.white10,
+              onTap: () {
+                // Navigator.push(
+                //   context,
+                //   MaterialPageRoute(builder: (context) =>
+                //       ChatScreen(Code: data['uid'],Name: data['name'],Photo: data['photoUrl'],senderName:  name!,senderUid: uid!,senderEmail: data['email'],),),
+                // );
+              },
+              title: Container(
+                margin: EdgeInsets.all(12),
+                child: Row(
                   children: [
                     Container(
-                      child: Text(data['name'],style: TextStyle(color: Colors.white,fontSize: 16),),
-                    ),
+                        width: 55.0,
+                        height: 55.0,
+                        decoration: new BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.black12,
+                            image: new DecorationImage(
+                                fit: BoxFit.cover,
+                                image: NetworkImage(data['photoUrl'])))),
                     Container(
-                      width: MediaQuery.of(context).size.width - 200,
-                      child: Text(data['email'],style: TextStyle(color: Colors.white,fontSize: 16),),
+                      margin: EdgeInsets.only(left: 15),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            child: Text(
+                              data['name'],
+                              style:
+                                  TextStyle(color: Colors.white, fontSize: 16),
+                            ),
+                          ),
+                          Container(
+                            width: MediaQuery.of(context).size.width - 200,
+                            child: Text(
+                              data['email'],
+                              style:
+                                  TextStyle(color: Colors.white, fontSize: 16),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
               ),
-
-            ],
-          ),
-        ),
-      ),
-
-    ) : SizedBox();
+            ),
+          )
+        : SizedBox();
   }
-
 }
 
 extension HexColor on Color {
