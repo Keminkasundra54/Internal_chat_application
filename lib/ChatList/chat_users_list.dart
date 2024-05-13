@@ -1,5 +1,7 @@
 // import 'package:cloud_firestore/cloud_firestore.dart';
 // import 'package:firebase_database/firebase_database.dart';
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -31,14 +33,13 @@ class User {
       required this.id,
       required this.googleId});
 
-  // Map<String, dynamic> toJson() {
-  //   return {
-  //     'name': name,
-  //     'email': email,
-  //     'photoUrl': photoUrl,
-  //     'id': id,
-  //   };
-  // }
+  factory User.fromJson(Map<String, dynamic> json) => User(
+        name: json['name'] as String,
+        email: json['email'] as String,
+        photoUrl: json['photoUrl'] as String,
+        id: json['id'] as String,
+        googleId: json['googleId'] as String,
+      );
 }
 
 class _ChatUserListState extends State<ChatUserList>
@@ -58,7 +59,32 @@ class _ChatUserListState extends State<ChatUserList>
   @override
   void initState() {
     WidgetsBinding.instance.addObserver(this);
-    getdata();
+    // getdata();
+    Future<User?> user = getdata(); // Call getdata and store the Future
+    user.then((userObject) {
+      if (userObject != null) {
+        socket = IO.io('http://192.168.1.13:3000', <String, dynamic>{
+          'transports': ['websocket'],
+        });
+        socket.connect();
+        print('Connected to Socket.io server!');
+
+        socket.on('connect', (_) => print('Connected'));
+        socket.emit('user', userObject.email);
+
+        // Use Completer to wait for currentUser to be set
+        // Completer<User?> completer = Completer<User?>();
+
+        socket.on('userData', (data) async {
+          print(data);
+        });
+
+        socket.on('disconnect', (_) => print('Disconnected'));
+      } else {
+        print('No user data retrieved.');
+        // Handle the case where no data is found
+      }
+    });
     // Timer.periodic(Duration(seconds: 1),  (s) {
     //   print("aaaaaaa $_lastLifecycleState.");
     // });
@@ -87,37 +113,75 @@ class _ChatUserListState extends State<ChatUserList>
     });
   }
 
-  getdata() async {
-    userInfo = await secureStorage.read(key: "user");
-    print(userInfo);
-    uid = userInfo.id;
-    email = userInfo.email;
-    name = userInfo.name;
-    print(uid);
-    print(email);
-    print(name);
-    // FirebaseFirestore.instance
-    //     .collection('users')
-    //     .doc(uid)
-    //     .update({'onlineStatus': "Online"});
+  // getdata() async {
+  //   String? userDataString = await secureStorage.read(key: 'user');
 
-    socket = IO.io('http://192.168.1.13:3000', <String, dynamic>{
-      'transports': ['websocket'],
-    });
-    socket.connect();
-    print('Connected to Socket.io server!');
+  //   if (userDataString != null && userDataString.isNotEmpty) {
+  //     try {
+  //       // Attempt decoding with error handling
 
-    socket.on('connect', (_) => print('Connected'));
-    socket.emit('user', email);
+  //       return User.fromJson(jsonDecode(userDataString));
+  //     } on FormatException catch (e) {
+  //       print('Error decoding user data: $e');
+  //       return null; // Handle decoding error
+  //     }
+  //   } else {
+  //     return null; // Handle case where no data is found
+  //   }
+  //   // userInfo = await secureStorage.read(key: "user");
+  //   // print(userInfo);
+  //   // // uid = userInfo.id;
+  //   // // email = userInfo.email;
+  //   // // name = userInfo.name;
+  //   // // print(uid);
+  //   // // print(email);
+  //   // // print(name);
+  //   // print('ID: ${userInfo.id}');
+  //   // print('Email: ${userInfo.email}');
+  //   // print('Name: ${userInfo.name}');
+  //   // print('ID: ${userInfo.getId()}');
+  //   // print('Email: ${userInfo.getEmail()}');
+  //   // print('Name: ${userInfo.getName()}');
 
-    // Use Completer to wait for currentUser to be set
-    // Completer<User?> completer = Completer<User?>();
+  //   // // FirebaseFirestore.instance
+  //   // //     .collection('users')
+  //   // //     .doc(uid)
+  //   // //     .update({'onlineStatus': "Online"});
 
-    socket.on('userData', (data) async {
-      print(data);
-    });
+  //   // socket = IO.io('http://192.168.1.13:3000', <String, dynamic>{
+  //   //   'transports': ['websocket'],
+  //   // });
+  //   // socket.connect();
+  //   // print('Connected to Socket.io server!');
 
-    socket.on('disconnect', (_) => print('Disconnected'));
+  //   // socket.on('connect', (_) => print('Connected'));
+  //   // socket.emit('user', email);
+
+  //   // // Use Completer to wait for currentUser to be set
+  //   // // Completer<User?> completer = Completer<User?>();
+
+  //   // socket.on('userData', (data) async {
+  //   //   print(data);
+  //   // });
+
+  //   // socket.on('disconnect', (_) => print('Disconnected'));
+  // }
+
+  Future<User?> getdata() async {
+    String? userDataString = await secureStorage.read(key: 'user');
+
+    if (userDataString != null && userDataString.isNotEmpty) {
+      try {
+        // Attempt decoding with error handling
+        return User.fromJson(jsonDecode(userDataString));
+      } on FormatException catch (e) {
+        print('Error decoding user data: $e');
+        return null;
+      }
+    } else {
+      print('No user data found in secure storage');
+      return null;
+    }
   }
 
   @override

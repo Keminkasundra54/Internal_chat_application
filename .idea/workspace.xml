@@ -21,8 +21,9 @@
   <component name="ChangeListManager">
     <list default="true" id="6afb7ba1-2f7a-4f47-84e6-3dd412140094" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.flutter-plugins-dependencies" beforeDir="false" afterPath="$PROJECT_DIR$/.flutter-plugins-dependencies" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/build/c8c06fe018e0d5b7db554bf86648ee76.cache.dill.track.dill" beforeDir="false" afterPath="$PROJECT_DIR$/build/c8c06fe018e0d5b7db554bf86648ee76.cache.dill.track.dill" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/2794971a5855e7decd7bb368de5d49d1.cache.dill.track.dill" beforeDir="false" afterPath="$PROJECT_DIR$/build/2794971a5855e7decd7bb368de5d49d1.cache.dill.track.dill" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

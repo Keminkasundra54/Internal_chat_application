@@ -25,14 +25,13 @@ class User {
       required this.id,
       required this.googleId});
 
-  // Map<String, dynamic> toJson() {
-  //   return {
-  //     'name': name,
-  //     'email': email,
-  //     'photoUrl': photoUrl,
-  //     'id': id,
-  //   };
-  // }
+  Map<String, dynamic> toJson() => {
+        "name": name,
+        "email": email,
+        "photoUrl": photoUrl,
+        "id": id,
+        "googleId": googleId,
+      };
 }
 
 late IO.Socket socket;
@@ -512,7 +511,15 @@ class AuthService {
   }
 
   Future<void> saveUserDataLocally(User user) async {
-    await _secureStorage.write(key: 'user', value: user.toString());
+    // await _secureStorage.write(key: 'user', value: jsonEncode(user));
+
+    try {
+      String userData = jsonEncode(user.toJson()); // Use toJson method
+      await _secureStorage.write(key: 'user', value: userData);
+      print('Data saved to secure storage (user)');
+    } catch (e) {
+      print('Error saving data to secure storage: $e');
+    }
     // await _secureStorage.write(key: 'user_name', value: user.name);
     // await _secureStorage.write(key: 'user_email', value: user.email);
     // await _secureStorage.write(key: 'user_photoUrl', value: user.photoUrl);
