@@ -42,6 +42,23 @@ class User {
       );
 }
 
+class OtherUser {
+  String name; // Replace with actual properties based on received data
+  String email; // Replace with actual properties based on received data
+  String photoUrl; // Replace with actual properties based on received data
+
+  OtherUser({
+    required this.name,
+    required this.email,
+    required this.photoUrl,
+  });
+  factory OtherUser.fromJson(Map<String, dynamic> json) => OtherUser(
+        name: json['name'] as String,
+        email: json['email'] as String,
+        photoUrl: json['photoUrl'] as String,
+      );
+}
+
 class _ChatUserListState extends State<ChatUserList>
     with TickerProviderStateMixin, WidgetsBindingObserver {
   final secureStorage = new FlutterSecureStorage();
@@ -54,7 +71,9 @@ class _ChatUserListState extends State<ChatUserList>
   String? uid = '';
   String? email = '';
   String? name = '';
-  var userInfo;
+  List<OtherUser> users = []; // List to store received users
+
+  // var userInfo;
   AppLifecycleState _lastLifecycleState = AppLifecycleState.resumed;
   @override
   void initState() {
@@ -77,6 +96,11 @@ class _ChatUserListState extends State<ChatUserList>
 
         socket.on('userData', (data) async {
           print(data);
+          for (name in data) {
+            print('User Name: $name["Name"]'); // Access each name in the list
+            // You can also add names to a separate list for further processing
+          }
+          _handleUserData(data);
         });
 
         socket.on('disconnect', (_) => print('Disconnected'));
@@ -184,6 +208,16 @@ class _ChatUserListState extends State<ChatUserList>
     }
   }
 
+  Future<void> _handleUserData(dynamic data) async {
+    // Parse the data into an OtherUser object
+    OtherUser otherUser = OtherUser.fromJson(jsonDecode(data));
+
+    // Update UI with the received user data (add to user list)
+    setState(() {
+      users.add(otherUser);
+    });
+  }
+
   @override
   void dispose() {
     _messageTextController.dispose();
@@ -285,8 +319,9 @@ class _ChatUserListState extends State<ChatUserList>
             child: ListView.builder(
               controller: _scrollcontroller,
               itemBuilder: (_, int index) {
-                return null;
-
+                // return null;
+                OtherUser user = users[index];
+                return buildCard(user);
                 // Implement your logic for building list items
               },
               itemCount: 0, // Change this to the actual item count

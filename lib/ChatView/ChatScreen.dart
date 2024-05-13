@@ -1092,59 +1092,58 @@ class _ChatScreenState extends State<ChatScreen>
   //   }
   // }
   Future<void> filePicker(BuildContext context, int fileType) async {
-  PlatformFile? platformFile;
-  String fileName = '';
-   FileType fileTypeValue;
-   switch (fileType) {
-    case 0:
-      fileTypeValue = FileType.image;
-      break;
-    case 1:
-      fileTypeValue = FileType.audio;
-      break;
-    case 2:
-      fileTypeValue = FileType.video;
-      break;
-    // Add more cases as needed for other file types
-    default:
-      throw ArgumentError('Invalid fileType: $fileType');
-  }
-  try {
-    final result = await FilePicker.platform.pickFiles(type: fileTypeValue);
-    if (result != null && result.files.isNotEmpty) {
-      platformFile = result.files.first;
-      fileName = p.basename(platformFile.path!);
-      setState(() {
-        fileName = fileName;
-      });
-      print(fileName);
-
-      // Convert PlatformFile to File
-      File file = File.fromUri(Uri.file(platformFile.path!));
-
-      uploadFile(file, fileType); // Now, you're passing a File
+    PlatformFile? platformFile;
+    String fileName = '';
+    FileType fileTypeValue;
+    switch (fileType) {
+      case 0:
+        fileTypeValue = FileType.image;
+        break;
+      case 1:
+        fileTypeValue = FileType.audio;
+        break;
+      case 2:
+        fileTypeValue = FileType.video;
+        break;
+      // Add more cases as needed for other file types
+      default:
+        throw ArgumentError('Invalid fileType: $fileType');
     }
-  } on PlatformException catch (e) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Error'),
-          content: Text('Unsupported exception: $e'),
-          actions: <Widget>[
-            TextButton(
-              child: Text('OK'),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-          ],
-        );
-      },
-    );
-  } catch (e) {
-    print('Error: $e');
-  }
-}
+    try {
+      final result = await FilePicker.platform.pickFiles(type: fileTypeValue);
+      if (result != null && result.files.isNotEmpty) {
+        platformFile = result.files.first;
+        fileName = p.basename(platformFile.path!);
+        setState(() {
+          fileName = fileName;
+        });
+        print(fileName);
 
+        // Convert PlatformFile to File
+        File file = File.fromUri(Uri.file(platformFile.path!));
+
+        uploadFile(file, fileType); // Now, you're passing a File
+      }
+    } on PlatformException catch (e) {
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text('Error'),
+            content: Text('Unsupported exception: $e'),
+            actions: <Widget>[
+              TextButton(
+                child: Text('OK'),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ],
+          );
+        },
+      );
+    } catch (e) {
+      print('Error: $e');
+    }
+  }
 
   FileType? _getFileTypeFromName(String name) {
     switch (name.toLowerCase()) {
