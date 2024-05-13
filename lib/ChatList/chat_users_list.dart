@@ -34,11 +34,11 @@ class User {
       required this.googleId});
 
   factory User.fromJson(Map<String, dynamic> json) => User(
-        name: json['name'] as String,
-        email: json['email'] as String,
-        photoUrl: json['photoUrl'] as String,
-        id: json['id'] as String,
-        googleId: json['googleId'] as String,
+        name: json['name'] as String ?? '',
+        email: json['email'] as String ?? '',
+        photoUrl: json['photoUrl'] as String ?? '',
+        id: json['id'] as String ?? '',
+        googleId: json['googleId'] as String ?? '',
       );
 }
 
@@ -52,11 +52,11 @@ class OtherUser {
     required this.email,
     required this.photoUrl,
   });
-  factory OtherUser.fromJson(Map<String, dynamic> json) => OtherUser(
-        name: json['name'] as String,
-        email: json['email'] as String,
-        photoUrl: json['photoUrl'] as String,
-      );
+  // factory OtherUser.fromJson(Map<String, dynamic> json) => OtherUser(
+  //       name: json['name'] as String ?? '',
+  //       email: json['email'] as String ?? '',
+  //       photoUrl: json['photoUrl'] as String ?? '',
+  //     );
 }
 
 class _ChatUserListState extends State<ChatUserList>
@@ -71,7 +71,7 @@ class _ChatUserListState extends State<ChatUserList>
   String? uid = '';
   String? email = '';
   String? name = '';
-  List<OtherUser> users = []; // List to store received users
+  List users = []; // List to store received users
 
   // var userInfo;
   AppLifecycleState _lastLifecycleState = AppLifecycleState.resumed;
@@ -95,11 +95,15 @@ class _ChatUserListState extends State<ChatUserList>
         // Completer<User?> completer = Completer<User?>();
 
         socket.on('userData', (data) async {
-          print(data);
-          for (name in data) {
-            print('User Name: $name["Name"]'); // Access each name in the list
-            // You can also add names to a separate list for further processing
+          // print('mainData $data');
+          if (data is List) {
+            setState(() {
+              users = data;
+            });
+          } else {
+            // Handle non-list data (e.g., print an error message)
           }
+
           _handleUserData(data);
         });
 
@@ -197,6 +201,8 @@ class _ChatUserListState extends State<ChatUserList>
     if (userDataString != null && userDataString.isNotEmpty) {
       try {
         // Attempt decoding with error handling
+        print('userData $userDataString');
+        print(jsonDecode(userDataString));
         return User.fromJson(jsonDecode(userDataString));
       } on FormatException catch (e) {
         print('Error decoding user data: $e');
@@ -210,12 +216,31 @@ class _ChatUserListState extends State<ChatUserList>
 
   Future<void> _handleUserData(dynamic data) async {
     // Parse the data into an OtherUser object
-    OtherUser otherUser = OtherUser.fromJson(jsonDecode(data));
+    if (data is List) {
+      print('okokokokokokok$data');
+      for (var item in data) {
+        print(item);
+        // Decode each item (assuming it's a JSON object)
+        // OtherUser otherUser = OtherUser.fromJson(item); // Assuming OtherUser.fromJson handles maps
 
-    // Update UI with the received user data (add to user list)
-    setState(() {
-      users.add(otherUser);
-    });
+        // Map<String, dynamic> userDataMap = jsonDecode(item);
+        // String userName = userDataMap['Name'];
+        String name = item['Name'];
+        String email = item['email'];
+        // OtherUser otherUser = OtherUser.fromJson(item);
+        // setState(() {
+        //   users.add(otherUser);
+        // });
+      }
+    } else {
+      // Handle unexpected data type (e.g., print an error message)
+    }
+    // OtherUser otherUser = OtherUser.fromJson(jsonDecode(data));
+
+    // // Update UI with the received user data (add to user list)
+    // setState(() {
+    //   users.add(otherUser);
+    // });
   }
 
   @override
@@ -316,15 +341,20 @@ class _ChatUserListState extends State<ChatUserList>
         new Flexible(
           child: Container(
             // Wrap with Container to handle height properly
+            // child: Text(
+            //   'hello',
+            //   style: TextStyle(color: Colors.white, fontSize: 16),
+            // ),
             child: ListView.builder(
               controller: _scrollcontroller,
               itemBuilder: (_, int index) {
                 // return null;
-                OtherUser user = users[index];
+                print('varuser $users');
+                var user = users[index];
                 return buildCard(user);
                 // Implement your logic for building list items
               },
-              itemCount: 0, // Change this to the actual item count
+              itemCount: users.length, // Change this to the actual item count
             ),
           ),
         ),
@@ -333,7 +363,8 @@ class _ChatUserListState extends State<ChatUserList>
   }
 
   Widget buildCard(data) {
-    return data['uid'] != uid
+    print('buildcard $data');
+    return data['_id'] != uid
         ? Container(
             decoration: BoxDecoration(
               // color: Colors.white10,
@@ -374,7 +405,7 @@ class _ChatUserListState extends State<ChatUserList>
                         children: [
                           Container(
                             child: Text(
-                              data['name'],
+                              data['Name'],
                               style:
                                   TextStyle(color: Colors.white, fontSize: 16),
                             ),
