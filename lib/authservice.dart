@@ -481,7 +481,7 @@ class AuthService {
       };
 
       socket.on('connect', (_) => print('Connected'));
-      socket.emit('chat_message', googleUserData);
+      socket.emit('login', googleUserData);
 
       // Use Completer to wait for currentUser to be set
       Completer<User?> completer = Completer<User?>();

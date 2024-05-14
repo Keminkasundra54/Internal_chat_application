@@ -2,6 +2,8 @@
 // import 'package:firebase_database/firebase_database.dart';
 import 'dart:convert';
 
+import 'package:firebase_chat/ChatView/ChatScreen.dart';
+import 'package:firebase_chat/Profile/profile.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -103,8 +105,6 @@ class _ChatUserListState extends State<ChatUserList>
           } else {
             // Handle non-list data (e.g., print an error message)
           }
-
-          _handleUserData(data);
         });
 
         socket.on('disconnect', (_) => print('Disconnected'));
@@ -201,8 +201,6 @@ class _ChatUserListState extends State<ChatUserList>
     if (userDataString != null && userDataString.isNotEmpty) {
       try {
         // Attempt decoding with error handling
-        print('userData $userDataString');
-        print(jsonDecode(userDataString));
         return User.fromJson(jsonDecode(userDataString));
       } on FormatException catch (e) {
         print('Error decoding user data: $e');
@@ -212,35 +210,6 @@ class _ChatUserListState extends State<ChatUserList>
       print('No user data found in secure storage');
       return null;
     }
-  }
-
-  Future<void> _handleUserData(dynamic data) async {
-    // Parse the data into an OtherUser object
-    if (data is List) {
-      print('okokokokokokok$data');
-      for (var item in data) {
-        print(item);
-        // Decode each item (assuming it's a JSON object)
-        // OtherUser otherUser = OtherUser.fromJson(item); // Assuming OtherUser.fromJson handles maps
-
-        // Map<String, dynamic> userDataMap = jsonDecode(item);
-        // String userName = userDataMap['Name'];
-        String name = item['Name'];
-        String email = item['email'];
-        // OtherUser otherUser = OtherUser.fromJson(item);
-        // setState(() {
-        //   users.add(otherUser);
-        // });
-      }
-    } else {
-      // Handle unexpected data type (e.g., print an error message)
-    }
-    // OtherUser otherUser = OtherUser.fromJson(jsonDecode(data));
-
-    // // Update UI with the received user data (add to user list)
-    // setState(() {
-    //   users.add(otherUser);
-    // });
   }
 
   @override
@@ -282,10 +251,14 @@ class _ChatUserListState extends State<ChatUserList>
         IconButton(
           icon: Icon(Icons.account_circle),
           onPressed: () {
-            // Navigator.push(
-            //     context,
-            //     MaterialPageRoute(
-            //         builder: (context) => Profile(url: "AppBar",uid: uid!, image: '',)));
+            Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => Profile(
+                          url: "AppBar",
+                          uid: uid!,
+                          image: '',
+                        )));
           },
           padding: EdgeInsets.only(right: 25),
         ),
@@ -349,7 +322,6 @@ class _ChatUserListState extends State<ChatUserList>
               controller: _scrollcontroller,
               itemBuilder: (_, int index) {
                 // return null;
-                print('varuser $users');
                 var user = users[index];
                 return buildCard(user);
                 // Implement your logic for building list items
@@ -363,7 +335,6 @@ class _ChatUserListState extends State<ChatUserList>
   }
 
   Widget buildCard(data) {
-    print('buildcard $data');
     return data['_id'] != uid
         ? Container(
             decoration: BoxDecoration(
@@ -378,11 +349,19 @@ class _ChatUserListState extends State<ChatUserList>
                   borderRadius: BorderRadius.circular(15.0)),
               tileColor: Colors.white10,
               onTap: () {
-                // Navigator.push(
-                //   context,
-                //   MaterialPageRoute(builder: (context) =>
-                //       ChatScreen(Code: data['uid'],Name: data['name'],Photo: data['photoUrl'],senderName:  name!,senderUid: uid!,senderEmail: data['email'],),),
-                // );
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ChatScreen(
+                      Code: data['_id'],
+                      Name: data['Name'],
+                      Photo: data['photoUrl'],
+                      senderName: name!,
+                      senderUid: uid!,
+                      senderEmail: data['email'],
+                    ),
+                  ),
+                );
               },
               title: Container(
                 margin: EdgeInsets.all(12),

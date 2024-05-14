@@ -1,5 +1,9 @@
+import 'dart:convert';
 import 'dart:io';
+import 'dart:ui';
+import 'dart:ui';
 
+import 'package:firebase_chat/ChatView/user_detail.dart';
 import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
 import 'package:cached_network_image/cached_network_image.dart';
@@ -12,6 +16,9 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 // import 'package:cloud_firestore/cloud_firestore.dart' as firestore;
+import 'package:socket_io_client/socket_io_client.dart' as IO;
+
+late IO.Socket socket;
 
 class ChatScreen extends StatefulWidget {
   String Code;
@@ -36,16 +43,40 @@ class ChatScreen extends StatefulWidget {
   }
 }
 
+class User {
+  String name;
+  String email;
+  String photoUrl;
+  String id;
+  String googleId;
+  // Other user attributes
+
+  User(
+      {required this.name,
+      required this.email,
+      required this.photoUrl,
+      required this.id,
+      required this.googleId});
+
+  factory User.fromJson(Map<String, dynamic> json) => User(
+        name: json['name'] as String ?? '',
+        email: json['email'] as String ?? '',
+        photoUrl: json['photoUrl'] as String ?? '',
+        id: json['id'] as String ?? '',
+        googleId: json['googleId'] as String ?? '',
+      );
+}
+
 class _ChatScreenState extends State<ChatScreen>
     with TickerProviderStateMixin, WidgetsBindingObserver {
   final TextEditingController _messageTextController = TextEditingController();
   final GlobalKey<AnimatedListState> _listKey = GlobalKey();
   bool isscroolvisible = false;
-
 // DatabaseReference rootRef = FirebaseDatabase.instance.reference();
   String? groupChatId;
   String? peerId;
   String? peerAvatar;
+  String? peerName;
   String? id;
   final secureStorage = new FlutterSecureStorage();
   File? imageFile;
@@ -58,8 +89,11 @@ class _ChatScreenState extends State<ChatScreen>
   @override
   void initState() {
     WidgetsBinding.instance.addObserver(this);
+    // final String senderName = widget.senderName;
+
     groupChatId = '';
     listScrollController.addListener(_scrollListener);
+    // print(senderName);
 
     readLocal();
     // rootRef.child(widget.Code).onChildRemoved
@@ -106,20 +140,35 @@ class _ChatScreenState extends State<ChatScreen>
 
   readLocal() async {
     peerId = widget.Code;
-    id = ''; // Fetch user id from your authentication system or storage
+    peerAvatar = widget.Photo;
+    peerName = widget.Name;
+
+    // id = ''; // Fetch user id from your authentication system or storage
     // Your socket.io logic for reading local data
+    String? userDataString = await secureStorage.read(key: 'user');
 
+    if (userDataString != null && userDataString.isNotEmpty) {
+      try {
+        // Attempt decoding with error handling
+        var user = User.fromJson(jsonDecode(userDataString));
+        id = user.id;
+      } on FormatException catch (e) {
+        print('Error decoding user data: $e');
+      }
+    } else {
+      print('No user data found in secure storage');
+    }
     // id = await secureStorage.read(key: "id") ?? '';
-    // if (id.hashCode <= peerId.hashCode) {
-    //   groupChatId = '$id-$peerId';
-    // } else {
-    //   groupChatId = '$peerId-$id';
-    // }
+    if (id.hashCode <= peerId.hashCode) {
+      groupChatId = '$id-$peerId';
+    } else {
+      groupChatId = '$peerId-$id';
+    }
 
-    // FirebaseFirestore.instance
-    //     .collection('users')
-    //     .doc(id)
-    //     .update({'chattingWith': peerId});
+    // // FirebaseFirestore.instance
+    // //     .collection('users')
+    // //     .doc(id)
+    // //     .update({'chattingWith': peerId});
 
     setState(() {});
   }
@@ -159,102 +208,118 @@ class _ChatScreenState extends State<ChatScreen>
   }
 
   PreferredSizeWidget _buildAppBar(BuildContext context) {
+    // socket = IO.io('http://192.168.1.13:3000', <String, dynamic>{
+    //   'transports': ['websocket'],
+    // });
+    // socket.connect();
+    // print('Connected to Socket.io server!');
+
+    // socket.on('connect', (_) => print('Connected'));
+    // // Emit the 'send_message' event with the message object
+    // socket.emit('user', peer);
     return AppBar(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(
           bottom: Radius.circular(30),
         ),
       ),
-      // title: Hero(
-      //   tag: "AppBar",
-      //   child: Material(
-      //     color: Colors.transparent,
-      //     child: GestureDetector(
-      //       onTap: () {
-      //         Navigator.push(
-      //           context,
-      //           MaterialPageRoute(
-      //             builder: (context) => UserDetails(
-      //               url: "AppBar",
-      //               image: widget.Photo,
-      //               uid: widget.Code,
-      //             ),
-      //           ),
-      //         ).then((value) {
-      //           print("assssss");
-      //           setState(() {});
-      //         });
-      //       },
-      //       child: Row(
-      //         children: [
-      //           Container(
-      //             width: 35.0,
-      //             height: 35.0,
-      //             decoration: BoxDecoration(
-      //               shape: BoxShape.circle,
-      //               color: Colors.black12,
-      //               image: DecorationImage(
-      //                 fit: BoxFit.cover,
-      //                 image: NetworkImage(widget.Photo),
-      //               ),
-      //             ),
-      //           ),
-      //           StreamBuilder<QuerySnapshot>(
-      //             stream: FirebaseFirestore.instance
-      //                 .collection("users")
-      //                 .where("uid", isEqualTo: widget.Code)
-      //                 .snapshots(),
-      //             builder: (context, snapshot) {
-      //               if (snapshot.hasError) {
-      //                 return Text('Error: ${snapshot.error}'); // Handle errors
-      //               }
+      title: Hero(
+        tag: "AppBar",
+        child: Material(
+          color: Colors.transparent,
+          child: GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => UserDetails(
+                    url: "AppBar",
+                    image: widget.Photo,
+                    uid: widget.Code,
+                  ),
+                ),
+              ).then((value) {
+                print('value $value');
+                // print("assssss");
+                setState(() {});
+              });
+            },
+            child: Row(
+              children: [
+                Container(
+                  width: 35.0,
+                  height: 35.0,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.black12,
+                    image: DecorationImage(
+                      fit: BoxFit.cover,
+                      image: NetworkImage(widget.Photo),
+                    ),
+                  ),
+                ),
+                // StreamBuilder<QuerySnapshot>(
+                //   stream: FirebaseFirestore.instance
+                //       .collection("users")
+                //       .where("uid", isEqualTo: widget.Code)
+                //       .snapshots(),
 
-      //               if (snapshot.connectionState == ConnectionState.waiting) {
-      //                 return SizedBox(); // Show placeholder while waiting
-      //               }
+                //   // stream: socket.on('userData',(_)=>{
+                //   //   print("user data"),
 
-      //               // Safe access to documents using null-safe operator
-      //               final data = snapshot.data?.docs;
+                //   // }) // Listen for 'user_data' event
 
-      //               if (data?.isNotEmpty == true) {
-      //                 final userDoc =
-      //                     data![0]; // Access the first document safely
-      //                 final name = userDoc['name'];
-      //                 final onlineStatus = userDoc['onlineStatus'];
+                //   builder: (context, snapshot) {
+                //     if (snapshot.hasError) {
+                //       return Text('Error: ${snapshot.error}'); // Handle errors
+                //     }
 
-      //                 return Container(
-      //                   padding: EdgeInsets.only(left: 15),
-      //                   child: Column(
-      //                     mainAxisAlignment: MainAxisAlignment.start,
-      //                     crossAxisAlignment: CrossAxisAlignment.start,
-      //                     children: [
-      //                       Text(
-      //                         name ?? "", // Handle potential null value of name
-      //                         style:
-      //                             TextStyle(fontSize: 16, color: Colors.white),
-      //                       ),
-      //                       onlineStatus?.isNotEmpty ==
-      //                               true // Check if onlineStatus exists
-      //                           ? Text(
-      //                               onlineStatus,
-      //                               style: TextStyle(
-      //                                   fontSize: 12, color: Colors.white),
-      //                             )
-      //                           : SizedBox(),
-      //                     ],
-      //                   ),
-      //                 );
-      //               } else {
-      //                 return SizedBox(); // Handle no data case
-      //               }
-      //             },
-      //           ),
-      //         ],
-      //       ),
-      //     ),
-      //   ),
-      // ),
-      title: Text('Your Title Here'), // Replace with your title
+                //     if (snapshot.connectionState == ConnectionState.waiting) {
+                //       return SizedBox(); // Show placeholder while waiting
+                //     }
+
+                //     // Safe access to documents using null-safe operator
+                //     final data = snapshot.data?.docs;
+
+                //     if (data?.isNotEmpty == true) {
+                //       final userDoc =
+                //           data![0]; // Access the first document safely
+                //       final name = userDoc['name'];
+                //       final onlineStatus = userDoc['onlineStatus'];
+
+                //       return Container(
+                //         padding: EdgeInsets.only(left: 15),
+                //         child: Column(
+                //           mainAxisAlignment: MainAxisAlignment.start,
+                //           crossAxisAlignment: CrossAxisAlignment.start,
+                //           children: [
+                //             Text(
+                //               name ?? "", // Handle potential null value of name
+                //               style:
+                //                   TextStyle(fontSize: 16, color: Colors.white),
+                //             ),
+                //             onlineStatus?.isNotEmpty ==
+                //                     true // Check if onlineStatus exists
+                //                 ? Text(
+                //                     onlineStatus,
+                //                     style: TextStyle(
+                //                         fontSize: 12, color: Colors.white),
+                //                   )
+                //                 : SizedBox(),
+                //           ],
+                //         ),
+                //       );
+                //     } else {
+                //       return SizedBox(); // Handle no data case
+                //     }
+                //   },
+                // ),
+              ],
+            ),
+          ),
+        ),
+      ),
+      // title: Text('Your Title Here'), // Replace with your title
 
       backgroundColor: Colors.white10,
     );
@@ -439,15 +504,15 @@ class _ChatScreenState extends State<ChatScreen>
         // ),
         Flexible(
           child: ListView.builder(
-            // Implement your chat list here
-            // Replace this with your chat list implementation
-            itemBuilder: (context, index) {
-              return ListTile(
-                title: Text('Chat Message $index'),
-              );
-            },
-            itemCount: 20,
-          ),
+              // Implement your chat list here
+              // Replace this with your chat list implementation
+              itemBuilder: (context, index) {
+                return ListTile(
+                  title: Text('Chat Message $index'),
+                );
+              },
+              itemCount: 20,
+              controller: listScrollController),
         ),
         Padding(padding: EdgeInsets.only(top: 10)),
         Row(
@@ -495,10 +560,10 @@ class _ChatScreenState extends State<ChatScreen>
             ),
             GestureDetector(
               onTap: () async {
-                // final message = _messageTextController.text;
-                // if (message.isNotEmpty) {
-                //   onSendMessage(message, 0); // Ensure message is not empty
-                // }
+                final message = _messageTextController.text;
+                if (message.isNotEmpty) {
+                  onSendMessage(message, 0); // Ensure message is not empty
+                }
               },
               child: ClipOval(
                 child: Container(
@@ -1161,30 +1226,62 @@ class _ChatScreenState extends State<ChatScreen>
     }
   }
 
+//   void onSendMessage(String content, int type) {
+//     // type: 0 = text, 1 = image, 2 = audio, 3 = video, 4 = others and pdf
+//     if (content.trim() != '') {
+//       _messageTextController.clear();
+
+//       var documentReference = FirebaseFirestore.instance
+//           .collection('messages')
+//           .doc(groupChatId)
+//           .collection(groupChatId!)
+//           .doc(DateTime.now().millisecondsSinceEpoch.toString());
+
+//       FirebaseFirestore.instance.runTransaction((transaction) async {
+//         transaction.set(
+//           documentReference,
+//           {
+//             'idFrom': id,
+//             'idTo': peerId,
+//             'Sender': widget.senderName,
+//             'timestamp': DateTime.now().millisecondsSinceEpoch.toString(),
+//             'content': content,
+//             'type': type
+//           },
+//         );
+//       });
+//       listScrollController.animateTo(0.0,
+//           duration: Duration(milliseconds: 300), curve: Curves.easeOut);
+//     } else {}
+//   }
+// }
   void onSendMessage(String content, int type) {
-    // type: 0 = text, 1 = image, 2 = audio, 3 = video, 4 = others and pdf
+    // Validate content to avoid sending empty messages
     if (content.trim() != '') {
+      // Create a message object with relevant data
+      Map<String, dynamic> message = {
+        'idFrom': id,
+        'idTo': peerId,
+        // 'Sender': widget.Name,
+        'timestamp': DateTime.now().millisecondsSinceEpoch.toString(),
+        'content': content,
+        'type': type,
+      };
+      socket = IO.io('http://192.168.1.13:3000', <String, dynamic>{
+        'transports': ['websocket'],
+      });
+      socket.connect();
+      print('Connected to Socket.io server!');
+
+      socket.on('connect', (_) => print('Connected'));
+      // Emit the 'send_message' event with the message object
+      socket.emit('chat_message', message);
+
+      socket.on('disconnect', (_) => print('Disconnected'));
+      // Clear the message text controller
       _messageTextController.clear();
 
-      var documentReference = FirebaseFirestore.instance
-          .collection('messages')
-          .doc(groupChatId)
-          .collection(groupChatId!)
-          .doc(DateTime.now().millisecondsSinceEpoch.toString());
-
-      FirebaseFirestore.instance.runTransaction((transaction) async {
-        transaction.set(
-          documentReference,
-          {
-            'idFrom': id,
-            'idTo': peerId,
-            'Sender': widget.senderName,
-            'timestamp': DateTime.now().millisecondsSinceEpoch.toString(),
-            'content': content,
-            'type': type
-          },
-        );
-      });
+      // Optionally animate the message list scroll to the bottom
       listScrollController.animateTo(0.0,
           duration: Duration(milliseconds: 300), curve: Curves.easeOut);
     } else {}
