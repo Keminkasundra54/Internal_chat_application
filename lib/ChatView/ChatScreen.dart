@@ -19,6 +19,7 @@ import 'package:intl/intl.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 
 late IO.Socket socket;
+List<dynamic> messages = []; // Change data to messages
 
 class ChatScreen extends StatefulWidget {
   String Code;
@@ -472,8 +473,6 @@ class _ChatScreenState extends State<ChatScreen>
 //   }
 
   Widget _buildColumn(IO.Socket socket) {
-    List<dynamic> messages = []; // Change data to messages
-
     // socket.on('messagesData', (data) async {
     //   print('Received message data: $data');
     //   print(data.runtimeType); // Print data
@@ -550,10 +549,10 @@ class _ChatScreenState extends State<ChatScreen>
               print(index);
               print(messages.length);
               if (index < messages.length) {
-                final message = messages[index];
-                if (message != null) {
-                  print('Message at index $index: $message');
-                  return message(message);
+                final messagess = messages[index];
+                if (messagess != null) {
+                  print('Message at index $index: $messagess');
+                  return message(messagess);
                 } else {
                   // Handle null message (e.g., print message or return empty container)
                   return Center(child: Text('No messages yet'));
