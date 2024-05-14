@@ -195,28 +195,37 @@ class _ChatScreenState extends State<ChatScreen>
 
   @override
   Widget build(BuildContext context) {
+    socket = IO.io('http://192.168.1.13:3000', <String, dynamic>{
+      'transports': ['websocket'],
+    });
+    socket.connect();
+    print('Connected to Socket.io server!');
+
+    socket.on('connect', (_) => print('Connected'));
+    // Emit the 'send_message' event with the message object
+    var message = {
+      'idFrom': id,
+      'idTo': peerId,
+    };
+    socket.emit('getchatmsg', message);
+
+    // socket.on('messagesData ', (data) async {
+    //   print('Received message: $data');
+    //   // Handle the received message here, such as updating UI or storing in a list
+    // });
     return WillPopScope(
         onWillPop: () {
           Navigator.pop(context);
           return Future.value(true);
         },
         child: Scaffold(
-          appBar: _buildAppBar(context),
-          body: _buildColumn(),
+          appBar: _buildAppBar(context, socket),
+          body: _buildColumn(socket),
           backgroundColor: Colors.black,
         ));
   }
 
-  PreferredSizeWidget _buildAppBar(BuildContext context) {
-    // socket = IO.io('http://192.168.1.13:3000', <String, dynamic>{
-    //   'transports': ['websocket'],
-    // });
-    // socket.connect();
-    // print('Connected to Socket.io server!');
-
-    // socket.on('connect', (_) => print('Connected'));
-    // // Emit the 'send_message' event with the message object
-    // socket.emit('user', peer);
+  PreferredSizeWidget _buildAppBar(BuildContext context, IO.Socket socket) {
     return AppBar(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(
@@ -258,12 +267,12 @@ class _ChatScreenState extends State<ChatScreen>
                     ),
                   ),
                 ),
-                // StreamBuilder<QuerySnapshot>(
-                //   stream: FirebaseFirestore.instance
-                //       .collection("users")
-                //       .where("uid", isEqualTo: widget.Code)
-                //       .snapshots(),
-
+                // StreamBuilder<dynamic>(
+                //   // stream: FirebaseFirestore.instance
+                //   //     .collection("users")
+                //   //     .where("uid", isEqualTo: widget.Code)
+                //   //     .snapshots(),
+                //   // stream: socket.on('messagesData'),
                 //   // stream: socket.on('userData',(_)=>{
                 //   //   print("user data"),
 
@@ -462,30 +471,43 @@ class _ChatScreenState extends State<ChatScreen>
 //     );
 //   }
 
-  Widget _buildColumn() {
+  Widget _buildColumn(IO.Socket socket) {
+    List<dynamic> messages = []; // Change data to messages
+
+    // socket.on('messagesData', (data) async {
+    //   print('Received message data: $data');
+    //   print(data.runtimeType); // Print data
+    //   setState(() {
+    //     messages = data;
+    //   });
+    // });
+
+    socket.on('messagesData', (data) async {
+      print('Received message data: $data');
+      setState(() {
+        messages = data; // Update messages
+        print('Updated messages: $messages'); // Print updated messages
+      });
+    });
+    // print('messages: $messages');
     return Column(
       children: <Widget>[
         // Flexible(
-        //   child: StreamBuilder<QuerySnapshot>(
-        //     stream: FirebaseFirestore.instance
-        //         .collection('messages')
-        //         .doc(groupChatId)
-        //         .collection(groupChatId!)
-        //         .orderBy('timestamp', descending: true)
-        //         .snapshots(),
+        //   child: StreamBuilder<dynamic>(
+        //     stream: null,
         //     builder: (context, snap) {
-        //       if (snap.hasError) {
-        //         return Text('Error: ${snap.error}'); // Handle errors
-        //       }
+        //       // if (snap.hasError) {
+        //       //   return Text('Error: ${snap.error}'); // Handle errors
+        //       // }
 
-        //       if (snap.connectionState == ConnectionState.waiting) {
-        //         return Center(
-        //             child:
-        //                 CircularProgressIndicator()); // Show loading indicator
-        //       }
+        //       // if (snap.connectionState == ConnectionState.waiting) {
+        //       //   return Center(
+        //       //       child:
+        //       //           CircularProgressIndicator()); // Show loading indicator
+        //       // }
 
         //       // Safe access to documents using null-safe operator
-        //       final data = snap.data?.docs;
+        //       // final data = snap.data?.docs;
 
         //       if (data?.isNotEmpty == true) {
         //         return ListView.builder(
@@ -493,7 +515,7 @@ class _ChatScreenState extends State<ChatScreen>
         //           reverse: true,
         //           itemCount: data!
         //               .length, // Use data! here as it's not null after the check
-        //           controller: listScrollController,
+        //           // controller: listScrollController,
         //           itemBuilder: (_, int index) => message(data[index]),
         //         );
         //       } else {
@@ -502,18 +524,47 @@ class _ChatScreenState extends State<ChatScreen>
         //     },
         //   ),
         // ),
+        // Flexible(
+        //   child: ListView.builder(
+        //       // Implement your chat list here
+        //       // Replace this with your chat list implementation
+        //       itemBuilder: (context, index) {
+        //         return ListTile(
+        //           title: Text('Chat Message $index'),
+        //         );
+        //       },
+        //       itemCount: 20,
+        //       controller: listScrollController),
+        // ),
+
         Flexible(
           child: ListView.builder(
-              // Implement your chat list here
-              // Replace this with your chat list implementation
-              itemBuilder: (context, index) {
-                return ListTile(
-                  title: Text('Chat Message $index'),
-                );
-              },
-              itemCount: 20,
-              controller: listScrollController),
+            padding: EdgeInsets.all(8.0),
+            reverse: true,
+            itemCount: messages.length,
+            // controller: listScrollController,
+            itemBuilder: (_, int index) {
+              // final message = messages[index];
+              // print('Message at index $index: $message');
+              // return message(message);
+              print(index);
+              print(messages.length);
+              if (index < messages.length) {
+                final message = messages[index];
+                if (message != null) {
+                  print('Message at index $index: $message');
+                  return message(message);
+                } else {
+                  // Handle null message (e.g., print message or return empty container)
+                  return Center(child: Text('No messages yet'));
+                }
+              } else {
+                return Container(); // Handle potential out-of-bounds index
+              }
+            },
+          ),
         ),
+
         Padding(padding: EdgeInsets.only(top: 10)),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -638,6 +689,9 @@ class _ChatScreenState extends State<ChatScreen>
   }
 
   Widget message(data) {
+    print('dataaaaaa');
+    print(widget.senderUid);
+    print(data['idFrom']);
     return data['idFrom'] == widget.senderUid
         ? Container(
             margin: const EdgeInsets.symmetric(vertical: 3),
