@@ -143,16 +143,26 @@ class _ChatScreenState extends State<ChatScreen>
     peerId = widget.Code;
     peerAvatar = widget.Photo;
     peerName = widget.Name;
-
+    print('emaaaaiillllllllllllll');
+    print(widget.senderEmail);
+    print(widget.Code);
+    print(widget.Name);
+    print(widget.Photo);
+    // print(widget.senderName);
+    // print(widget.senderUid);
     // id = ''; // Fetch user id from your authentication system or storage
     // Your socket.io logic for reading local data
     String? userDataString = await secureStorage.read(key: 'user');
-
+    print(userDataString);
     if (userDataString != null && userDataString.isNotEmpty) {
       try {
         // Attempt decoding with error handling
+        print(userDataString);
+
         var user = User.fromJson(jsonDecode(userDataString));
+        print("user data: $user");
         id = user.id;
+        // return user;
       } on FormatException catch (e) {
         print('Error decoding user data: $e');
       }
@@ -204,6 +214,7 @@ class _ChatScreenState extends State<ChatScreen>
 
     socket.on('connect', (_) => print('Connected'));
     // Emit the 'send_message' event with the message object
+    print(id);
     var message = {
       'idFrom': id,
       'idTo': peerId,
@@ -480,13 +491,16 @@ class _ChatScreenState extends State<ChatScreen>
     //     messages = data;
     //   });
     // });
-
     socket.on('messagesData', (data) async {
-      print('Received message data: $data');
-      setState(() {
-        messages = data; // Update messages
-        print('Updated messages: $messages'); // Print updated messages
-      });
+      // print('Received message data: $data');
+      if (mounted) {
+        setState(() {
+          // messages = [];
+          messages = data.reversed.toList();
+          // print('messages: $messages'); // Update messages
+          // print('Updated messages: $messages'); // Print updated messages
+        });
+      }
     });
     // print('messages: $messages');
     return Column(
@@ -535,33 +549,48 @@ class _ChatScreenState extends State<ChatScreen>
         //       itemCount: 20,
         //       controller: listScrollController),
         // ),
+        // Flexible(
+        //         child: messages.isEmpty
+        //             ? Center(child: Text('No messages yet'))
+        //             : ListView.builder(
+        //                 padding: EdgeInsets.all(8.0),
+        //                 reverse: true,
+        //                 itemCount: messages.length,
+        //                 controller: listScrollController,
+        //                 itemBuilder: (_, int index) {
+        //                   // Build message widgets here
+        //                 },
+        //               ),
+        //       ),
 
         Flexible(
-          child: ListView.builder(
-            padding: EdgeInsets.all(8.0),
-            reverse: true,
-            itemCount: messages.length,
-            // controller: listScrollController,
-            itemBuilder: (_, int index) {
-              // final message = messages[index];
-              // print('Message at index $index: $message');
-              // return message(message);
-              print(index);
-              print(messages.length);
-              if (index < messages.length) {
-                final messagess = messages[index];
-                if (messagess != null) {
-                  print('Message at index $index: $messagess');
-                  return message(messagess);
-                } else {
-                  // Handle null message (e.g., print message or return empty container)
-                  return Center(child: Text('No messages yet'));
-                }
-              } else {
-                return Container(); // Handle potential out-of-bounds index
-              }
-            },
-          ),
+          child: messages.isEmpty
+              ? Center(child: Text('No messages yet'))
+              : ListView.builder(
+                  padding: EdgeInsets.all(8.0),
+                  reverse: true,
+                  itemCount: messages.length,
+                  controller: listScrollController,
+                  itemBuilder: (_, int index) {
+                    // final message = messages[index];
+                    // print('Message at index $index: $message');
+                    // return message(message);
+                    // print(index);
+                    // print(messages.length);
+                    if (index < messages.length) {
+                      final messagess = messages[index];
+                      if (messagess != null) {
+                        return message(messagess);
+                        // print('Message at index $index: $messagess');
+                      } else {
+                        // Handle null message (e.g., print message or return empty container)
+                        return Center(child: Text('No messages yet'));
+                      }
+                    } else {
+                      return Container(); // Handle potential out-of-bounds index
+                    }
+                  },
+                ),
         ),
 
         Padding(padding: EdgeInsets.only(top: 10)),
@@ -592,9 +621,7 @@ class _ChatScreenState extends State<ChatScreen>
                     contentPadding: EdgeInsets.all(12),
                     suffixIcon: IconButton(
                       icon: Icon(Icons.image),
-                      onPressed: () => {
-                        // filePicker(context, 'image')
-                      },
+                      onPressed: () => {filePicker(context, 'image')},
                       color: Colors.grey,
                     ),
                     hintText: "Type here...",
@@ -688,10 +715,8 @@ class _ChatScreenState extends State<ChatScreen>
   }
 
   Widget message(data) {
-    print('dataaaaaa');
-    print(widget.senderUid);
-    print(data['idFrom']);
-    return data['idFrom'] == widget.senderUid
+    final bool isCurrentUserMessage = data['idFrom'] == peerId;
+    return isCurrentUserMessage
         ? Container(
             margin: const EdgeInsets.symmetric(vertical: 3),
             child: Row(
@@ -1209,7 +1234,7 @@ class _ChatScreenState extends State<ChatScreen>
   //     print('Error: $e');
   //   }
   // }
-  Future<void> filePicker(BuildContext context, int fileType) async {
+  Future<void> filePicker(BuildContext context, fileType) async {
     PlatformFile? platformFile;
     String fileName = '';
     FileType fileTypeValue;
@@ -1313,8 +1338,8 @@ class _ChatScreenState extends State<ChatScreen>
     if (content.trim() != '') {
       // Create a message object with relevant data
       Map<String, dynamic> message = {
-        'idFrom': id,
-        'idTo': peerId,
+        'idFrom': peerId,
+        'idTo': id,
         // 'Sender': widget.Name,
         'timestamp': DateTime.now().millisecondsSinceEpoch.toString(),
         'content': content,
