@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:ui';
 import 'dart:ui';
 
+import 'package:firebase_chat/ChatView/full_photo.dart';
 import 'package:firebase_chat/ChatView/user_detail.dart';
 import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
@@ -784,11 +785,14 @@ class _ChatScreenState extends State<ChatScreen>
                                         ),
                                       ),
                                       onPressed: () {
-                                        // Navigator.push(
-                                        //     context,
-                                        //     MaterialPageRoute(
-                                        //         builder: (context) => FullPhoto(
-                                        //             url: data['content'])));
+                                        Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                                builder: (context) => FullPhoto(
+                                                      url: data['content'],
+                                                      showEdit: true,
+                                                      uid: '',
+                                                    )));
                                       },
                                       style: TextButton.styleFrom(
                                         padding: EdgeInsets.all(0),
@@ -912,11 +916,14 @@ class _ChatScreenState extends State<ChatScreen>
                                       ),
                                     ),
                                     onPressed: () {
-                                      // Navigator.push(
-                                      //     context,
-                                      //     MaterialPageRoute(
-                                      //         builder: (context) => FullPhoto(
-                                      //             url: data['content'])));
+                                      Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                              builder: (context) => FullPhoto(
+                                                    url: data['content'],
+                                                    showEdit: true,
+                                                    uid: '',
+                                                  )));
                                     },
                                     style: TextButton.styleFrom(
                                       padding: EdgeInsets.all(0),
@@ -1036,9 +1043,18 @@ class _ChatScreenState extends State<ChatScreen>
 //   });
 // }
 
-  Future<void> uploadFile(File file, int fileType) async {
-    String url;
-    String fileName = DateTime.now().millisecondsSinceEpoch.toString();
+  Future<void> uploadFile(File file) async {
+    // String url;
+    // String fileName = DateTime.now().millisecondsSinceEpoch.toString();
+
+    final bytes = await file.readAsBytes();
+
+    // Replace with your server address
+    socket.emit('upload', {
+      'fileName': p.basename(file.path!),
+      'fileData': bytes,
+      // 'fileType': fileType, // Add this line if sending fileType
+    });
 // StorageReference storageRef;
 
 // try {
@@ -1103,7 +1119,7 @@ class _ChatScreenState extends State<ChatScreen>
         setState(() {
           isLoading = true;
         });
-        uploadFile(imageFile, 1); // Assuming uploadFile handles file type
+        uploadFile(imageFile); // Assuming uploadFile handles file type
       } else {
         print('User canceled image selection');
       }
@@ -1184,88 +1200,46 @@ class _ChatScreenState extends State<ChatScreen>
 //         });
 //   }
 // }
-  // Future<void> filePicker(BuildContext context, String fileType) async {
-  //   PlatformFile? platformFile;
-  //   String fileName = '';
-  //   try {
-  //     // Check if FileType is imported
-  //     if (FileType.values == null) {
-  //       throw Exception('Missing FileType import from file_picker package');
-  //     }
-
-  //     final fileTypeValue = _getFileTypeFromName(fileType);
-  //     if (fileTypeValue == null) {
-  //       print('Invalid file type: $fileType');
-  //       return; // Handle invalid file type
-  //     }
-
-  //     // final result = await FilePicker.platform.pickFiles(type: fileTypeValue);
-  //         final result = await FilePicker.platform.pickFiles(type: fileType);
-  //     if (result != null && result.files.isNotEmpty) {
-  //       platformFile = result.files.first;
-  //       fileName = p.basename(platformFile.path!);
-  //       setState(() {
-  //         fileName =
-  //             fileName; // Assuming you want to update the UI with the filename
-  //       });
-  //       print(fileName);
-  //       //  File file = File(platformFile.path!);
-  //        File file = File.fromUri(Uri.file(platformFile.path!));
-  //       uploadFile(file, fileType); // Assuming uploadFile handles file type
-  //     }
-  //   } on PlatformException catch (e) {
-  //     showDialog(
-  //       context: context,
-  //       builder: (BuildContext context) {
-  //         return AlertDialog(
-  //           title: Text('Error'),
-  //           content: Text('Unsupported exception: $e'),
-  //           actions: <Widget>[
-  //             TextButton(
-  //               child: Text('OK'),
-  //               onPressed: () => Navigator.of(context).pop(),
-  //             ),
-  //           ],
-  //         );
-  //       },
-  //     );
-  //   } catch (e) {
-  //     // Handle other exceptions
-  //     print('Error: $e');
-  //   }
-  // }
-  Future<void> filePicker(BuildContext context, fileType) async {
+  Future<void> filePicker(BuildContext context, String fileType) async {
     PlatformFile? platformFile;
     String fileName = '';
-    FileType fileTypeValue;
-    switch (fileType) {
-      case 0:
-        fileTypeValue = FileType.image;
-        break;
-      case 1:
-        fileTypeValue = FileType.audio;
-        break;
-      case 2:
-        fileTypeValue = FileType.video;
-        break;
-      // Add more cases as needed for other file types
-      default:
-        throw ArgumentError('Invalid fileType: $fileType');
-    }
     try {
+      // Check if FileType is imported
+      if (FileType.values == null) {
+        throw Exception('Missing FileType import from file_picker package');
+      }
+
+      final fileTypeValue = _getFileTypeFromName(fileType);
+      if (fileTypeValue == null) {
+        print('Invalid file type: $fileType');
+        return; // Handle invalid file type
+      }
+
+      // final result = await FilePicker.platform.pickFiles(type: fileTypeValue);
       final result = await FilePicker.platform.pickFiles(type: fileTypeValue);
       if (result != null && result.files.isNotEmpty) {
         platformFile = result.files.first;
-        fileName = p.basename(platformFile.path!);
+        print(platformFile);
+        print(platformFile.path);
+        if (platformFile?.path != null) {
+          print(platformFile.path);
+          fileName = p.basename(platformFile.path!);
+          // ... rest of your code using the path
+        } else {
+          print('Path is not available');
+          // Handle the case where the path is not accessible (optional)
+        }
+
+        // fileName = p.basename(platformFile.path!);
         setState(() {
-          fileName = fileName;
+          fileName =
+              fileName; // Assuming you want to update the UI with the filename
         });
         print(fileName);
-
-        // Convert PlatformFile to File
+        //  File file = File(platformFile.path!);
         File file = File.fromUri(Uri.file(platformFile.path!));
 
-        uploadFile(file, fileType); // Now, you're passing a File
+        uploadFile(file); // Assuming uploadFile handles file type
       }
     } on PlatformException catch (e) {
       showDialog(
@@ -1284,9 +1258,64 @@ class _ChatScreenState extends State<ChatScreen>
         },
       );
     } catch (e) {
+      // Handle other exceptions
       print('Error: $e');
     }
   }
+
+  // Future<void> filePicker(BuildContext context, int fileType) async {
+  //   PlatformFile? platformFile;
+  //   String fileName = '';
+  //   FileType fileTypeValue;
+  //   switch (fileType) {
+  //     case 0:
+  //       fileTypeValue = FileType.image;
+  //       break;
+  //     case 1:
+  //       fileTypeValue = FileType.audio;
+  //       break;
+  //     case 2:
+  //       fileTypeValue = FileType.video;
+  //       break;
+  //     // Add more cases as needed for other file types
+  //     default:
+  //       throw ArgumentError('Invalid fileType: $fileType');
+  //   }
+  //   try {
+  //     final result = await FilePicker.platform.pickFiles(type: fileTypeValue);
+  //     if (result != null && result.files.isNotEmpty) {
+  //       platformFile = result.files.first;
+  //       fileName = p.basename(platformFile.path!);
+  //       setState(() {
+  //         fileName = fileName;
+  //       });
+  //       print(fileName);
+
+  //       // Convert PlatformFile to File
+  //       File file = File.fromUri(Uri.file(platformFile.path!));
+
+  //       uploadFile(file, fileType); // Now, you're passing a File
+  //     }
+  //   } on PlatformException catch (e) {
+  //     showDialog(
+  //       context: context,
+  //       builder: (BuildContext context) {
+  //         return AlertDialog(
+  //           title: Text('Error'),
+  //           content: Text('Unsupported exception: $e'),
+  //           actions: <Widget>[
+  //             TextButton(
+  //               child: Text('OK'),
+  //               onPressed: () => Navigator.of(context).pop(),
+  //             ),
+  //           ],
+  //         );
+  //       },
+  //     );
+  //   } catch (e) {
+  //     print('Error: $e');
+  //   }
+  // }
 
   FileType? _getFileTypeFromName(String name) {
     switch (name.toLowerCase()) {

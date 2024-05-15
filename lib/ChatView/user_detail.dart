@@ -1,11 +1,13 @@
 // import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:socket_io_client/socket_io_client.dart' as IO;
+
+late IO.Socket socket;
 
 class UserDetails extends StatelessWidget {
   final String url;
   final String image;
   final String uid;
-
   UserDetails(
       {Key? key, required this.url, required this.image, required this.uid})
       : super(key: key);
@@ -40,6 +42,7 @@ class UserDetailsScreen extends StatefulWidget {
   final String url;
   final String image;
   final String uid;
+  List<dynamic> userData = [];
 
   UserDetailsScreen(
       {Key? key, required this.url, required this.image, required this.uid})
@@ -57,10 +60,26 @@ class UserDetailsScreenState extends State<UserDetailsScreen> {
 
   UserDetailsScreenState(
       {Key? key, required this.url, required this.image, required this.uid});
+  Map<String, dynamic> userData = {}; // Store data from socket
 
   @override
   void initState() {
     super.initState();
+    socket = IO.io('http://192.168.1.13:3000', <String, dynamic>{
+      'transports': ['websocket'],
+    });
+    socket.connect();
+    print('Connected to Socket.io server!');
+
+    socket.on('connect', (_) => print('Connectedgetuser'));
+    socket.emit('getuser', {'id': uid});
+
+    socket.on('user', (data) {
+      print(data);
+      setState(() {
+        userData = data;
+      });
+    });
   }
 
   // @override
@@ -219,7 +238,7 @@ class UserDetailsScreenState extends State<UserDetailsScreen> {
   //                                 Container(
   //                                   padding: EdgeInsets.only(top: 5),
   //                                   child: Text(
-  //                                     email?? '',
+  //                                     email ?? '',
   //                                     style: TextStyle(
   //                                         color: Colors.white, fontSize: 18),
   //                                   ),
@@ -259,34 +278,231 @@ class UserDetailsScreenState extends State<UserDetailsScreen> {
   //   );
   // }
 
+  // @override
+  // Widget build(BuildContext context) {
+  //   // Replace your Firebase logic with your desired functionality here
+  //   return Scaffold(
+  //     appBar: AppBar(
+  //       title: Text('User Details'),
+  //     ),
+  //     body: Container(
+  //       padding: EdgeInsets.all(20),
+  //       child: Column(
+  //         crossAxisAlignment: CrossAxisAlignment.start,
+  //         children: [
+  //           Text(
+  //             'User ID: $uid',
+  //             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+  //           ),
+  //           SizedBox(height: 20),
+  //           Text(
+  //             'Image URL: $image',
+  //             style: TextStyle(fontSize: 16),
+  //           ),
+  //           SizedBox(height: 20),
+  //           Text(
+  //             'Profile URL: $url',
+  //             style: TextStyle(fontSize: 16),
+  //           ),
+  //           // Add more UI components as needed
+  //         ],
+  //       ),
+  //     ),
+  //   );
+  // }
   @override
   Widget build(BuildContext context) {
-    // Replace your Firebase logic with your desired functionality here
     return Scaffold(
-      appBar: AppBar(
-        title: Text('User Details'),
-      ),
-      body: Container(
-        padding: EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'User ID: $uid',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+      // ... (build the UI using userData)
+      body: NestedScrollView(
+        // ... (rest of the NestedScrollView remains the same)
+        // body: Container(
+        //   padding: EdgeInsets.only(top: 0),
+        //   child: Column(
+        //     crossAxisAlignment: CrossAxisAlignment.start,
+        //     // ... (rest of the Column definition)
+        //     children: [
+        //       Container(
+        //         padding: EdgeInsets.all(20),
+        //         child: Text(
+        //           "About",
+        //           style: TextStyle(
+        //             color: Colors.white,
+        //             fontSize: 25,
+        //             fontWeight: FontWeight.w600,
+        //           ),
+        //         ),
+        //       ),
+        //       Container(
+        //         child: Card(
+        //           color: Colors.white10,
+        //           child: Container(
+        //             width: MediaQuery.of(context).size.width,
+        //             margin: EdgeInsets.all(15),
+        //             child: Column(
+        //               mainAxisAlignment: MainAxisAlignment.start,
+        //               crossAxisAlignment: CrossAxisAlignment.start,
+        //               children: [
+        //                 Container(
+        //                   child: Text(
+        //                     "Status",
+        //                     style: TextStyle(
+        //                       color: Colors.white,
+        //                       fontSize: 12,
+        //                     ),
+        //                   ),
+        //                 ),
+        //                 Container(
+        //                   padding: EdgeInsets.only(top: 5),
+        //                   child: Text(
+        //                     userData['Status'] ?? '', // Access data using key
+        //                     style: TextStyle(
+        //                       color: Colors.white,
+        //                       fontSize: 18,
+        //                     ),
+        //                   ),
+        //                 ),
+        //                 // ... (repeat for other user data fields)
+        //               ],
+        //             ),
+        //           ),
+        //         ),
+        //       ),
+        //     ],
+        //   ),
+        // ),
+        headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
+          return <Widget>[
+            SliverAppBar(
+              expandedHeight: 300.0,
+              backgroundColor: Colors.white10,
+              floating: false,
+              pinned: true,
+              flexibleSpace: FlexibleSpaceBar(
+                titlePadding: EdgeInsets.only(left: 48, bottom: 18),
+                centerTitle: false,
+                title: Container(
+                  child: Text(
+                    userData['name'] ?? "", // Access data using key
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16.0,
+                    ),
+                  ),
+                ),
+                background: GestureDetector(
+                  onTap: () {
+                    // Handle tap on background (optional)
+                  },
+                  child: Image.network(
+                    userData['photoUrl'] ?? "", // Access data using key
+                    fit: BoxFit.cover,
+                    color: Colors.black12,
+                    colorBlendMode: BlendMode.darken,
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return Center(
+                        child: CircularProgressIndicator(),
+                      );
+                    },
+                    errorBuilder: (context, error, trace) {
+                      return Icon(Icons.error);
+                    },
+                  ),
+                  // child: CachedNetworkImage(
+                  //   placeholder: (context, url) => Container(
+                  //     child: Icon(
+                  //       Icons.account_circle,
+                  //       size: 200,
+                  //     ),
+                  //   ),
+                  //   imageUrl:
+                  //       userData['photoUrl'] ?? "", // Access data using key
+                  //   fit: BoxFit.cover,
+                  //   color: Colors.black12,
+                  //   colorBlendMode: BlendMode.darken,
+                  // ),
+                ),
+              ),
             ),
-            SizedBox(height: 20),
-            Text(
-              'Image URL: $image',
-              style: TextStyle(fontSize: 16),
-            ),
-            SizedBox(height: 20),
-            Text(
-              'Profile URL: $url',
-              style: TextStyle(fontSize: 16),
-            ),
-            // Add more UI components as needed
-          ],
+            SliverPadding(
+              padding: EdgeInsets.only(bottom: 75),
+            )
+          ];
+        },
+        body: Container(
+          padding: EdgeInsets.only(top: 0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: EdgeInsets.all(20),
+                child: Text(
+                  "About",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 25,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              Container(
+                child: Card(
+                  color: Colors.white10,
+                  child: Container(
+                    width: MediaQuery.of(context).size.width,
+                    margin: EdgeInsets.all(15),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          child: Text(
+                            "Status",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                        Container(
+                          padding: EdgeInsets.only(top: 5),
+                          child: Text(
+                            userData['Status'] ?? '', // Access data using key
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                            ),
+                          ),
+                        ),
+                        // Add similar blocks for other user data fields
+                        Container(
+                          child: Text(
+                            "Email",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                        Container(
+                          padding: EdgeInsets.only(top: 5),
+                          child: Text(
+                            userData['email'] ?? '', // Access data using key
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                            ),
+                          ),
+                        ),
+                        // ... (repeat for other fields)
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
