@@ -113,6 +113,8 @@ class _ChatScreenState extends State<ChatScreen>
   @override
   void dispose() {
     _messageTextController.dispose();
+
+    socket.off('messagesData');
     super.dispose();
   }
 
@@ -155,6 +157,12 @@ class _ChatScreenState extends State<ChatScreen>
     // Your socket.io logic for reading local data
     String? userDataString = await secureStorage.read(key: 'user');
     print(userDataString);
+    // if (messages.isEmpty) {
+    // If no messages are available, clear the messages list
+    setState(() {
+      messages = [];
+    });
+    // }
     if (userDataString != null && userDataString.isNotEmpty) {
       try {
         // Attempt decoding with error handling
@@ -182,7 +190,7 @@ class _ChatScreenState extends State<ChatScreen>
     // //     .doc(id)
     // //     .update({'chattingWith': peerId});
 
-    setState(() {});
+    // setState(() {});
   }
 
   _scrollListener() {
@@ -216,11 +224,13 @@ class _ChatScreenState extends State<ChatScreen>
     socket.on('connect', (_) => print('Connected'));
     // Emit the 'send_message' event with the message object
     print(id);
-    var message = {
-      'idFrom': id,
-      'idTo': peerId,
-    };
-    socket.emit('getchatmsg', message);
+    if (id != "" && peerId != "") {
+      var message = {
+        'idFrom': id,
+        'idTo': peerId,
+      };
+      socket.emit('getchatmsg', message);
+    }
 
     // socket.on('messagesData ', (data) async {
     //   print('Received message: $data');
@@ -263,7 +273,7 @@ class _ChatScreenState extends State<ChatScreen>
               ).then((value) {
                 print('value $value');
                 // print("assssss");
-                setState(() {});
+                // setState(() {});
               });
             },
             child: Row(
@@ -496,7 +506,7 @@ class _ChatScreenState extends State<ChatScreen>
       // print('Received message data: $data');
       if (mounted) {
         setState(() {
-          // messages = [];
+          messages = [];
           messages = data.reversed.toList();
           // print('messages: $messages'); // Update messages
           // print('Updated messages: $messages'); // Print updated messages

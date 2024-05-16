@@ -82,6 +82,11 @@ class UserDetailsScreenState extends State<UserDetailsScreen> {
     });
   }
 
+  @override
+  void dispose() {
+    super.dispose();
+    socket.disconnect(); // Close the socket connection
+  }
   // @override
   // Widget build(BuildContext context) {
   //   return StreamBuilder(
@@ -310,6 +315,7 @@ class UserDetailsScreenState extends State<UserDetailsScreen> {
   //     ),
   //   );
   // }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(

@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:image_picker/image_picker.dart';
 
-
 class Profile extends StatefulWidget {
   final String? url;
   final String? image;
@@ -34,7 +33,7 @@ class ProfileState extends State<Profile> {
     required this.image,
     required this.uid,
   }); // Initialize imageFile with an empty file
-       // Initialize imageUrl with an empty string
+  // Initialize imageUrl with an empty string
   late File imageFile;
   bool isLoading = false;
   late String imageUrl;
@@ -584,12 +583,12 @@ class ProfileState extends State<Profile> {
 
     // Handle the scenario where no image is picked (optional)
     print('No image selected.');
-      setState(() {
+    setState(() {
       isLoading = true;
     });
     uploadFile(imageFile, 1);
     Navigator.pop(context);
-    }
+  }
 
   Future uploadFile(File file, int fileType) async {
     // String Url;
