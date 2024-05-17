@@ -415,19 +415,6 @@ class UserDetailsScreenState extends State<UserDetailsScreen> {
                       return Icon(Icons.error);
                     },
                   ),
-                  // child: CachedNetworkImage(
-                  //   placeholder: (context, url) => Container(
-                  //     child: Icon(
-                  //       Icons.account_circle,
-                  //       size: 200,
-                  //     ),
-                  //   ),
-                  //   imageUrl:
-                  //       userData['photoUrl'] ?? "", // Access data using key
-                  //   fit: BoxFit.cover,
-                  //   color: Colors.black12,
-                  //   colorBlendMode: BlendMode.darken,
-                  // ),
                 ),
               ),
             ),
