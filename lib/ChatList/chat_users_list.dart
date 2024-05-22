@@ -81,7 +81,17 @@ class _ChatUserListState extends State<ChatUserList>
   void initState() {
     WidgetsBinding.instance.addObserver(this);
     // getdata();
-    Future<User?> user = getdata(); // Call getdata and store the Future
+    Future<User?> user = getdata();
+    user.then((userObject) {
+      if (userObject != null) {
+        uid = userObject.id;
+        // email = userObject.email;
+        // name = userObject.name;
+      } else {
+        return null;
+      }
+    });
+    // Call getdata and store the Future
     user.then((userObject) {
       if (userObject != null) {
         socket = IO.io('http://192.168.1.13:3000', <String, dynamic>{

@@ -64,7 +64,6 @@ class UserDetailsScreenState extends State<UserDetailsScreen> {
 
   @override
   void initState() {
-    super.initState();
     socket = IO.io('http://192.168.1.13:3000', <String, dynamic>{
       'transports': ['websocket'],
     });
@@ -80,6 +79,7 @@ class UserDetailsScreenState extends State<UserDetailsScreen> {
         userData = data;
       });
     });
+    super.initState();
   }
 
   @override

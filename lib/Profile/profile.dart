@@ -5,6 +5,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:firebase_chat/Login/login.dart';
+import 'package:socket_io_client/socket_io_client.dart' as IO;
 
 class Profile extends StatefulWidget {
   final String? url;
@@ -23,6 +25,11 @@ final File emptyFile = File(emptyFilePath);
 
 class ProfileState extends State<Profile> {
   final secureStorage = new FlutterSecureStorage();
+
+  final TextEditingController _controllerStatus = new TextEditingController();
+  final TextEditingController _controllerName = new TextEditingController();
+  final TextEditingController _controllerNumber = new TextEditingController();
+  final TextEditingController _controllerAbout = new TextEditingController();
   final String url;
   final String image;
   final String uid;
@@ -42,13 +49,47 @@ class ProfileState extends State<Profile> {
   bool showNumber = false;
   bool showAbout = false;
 
-  final TextEditingController _controller = new TextEditingController();
-  final TextEditingController _controllerName = new TextEditingController();
-  final TextEditingController _controllerNumber = new TextEditingController();
-  final TextEditingController _controllerAbout = new TextEditingController();
+  late IO.Socket socket;
+
+  var userData;
+
   @override
   void initState() {
     super.initState();
+
+    initializeSocket();
+  }
+
+  void initializeSocket() {
+    socket = IO.io('http://192.168.1.13:3000', <String, dynamic>{
+      'transports': ['websocket'],
+    });
+
+    socket.onConnect((_) {
+      print('connect');
+    });
+    socket.emit('getuser', {'id': uid});
+    socket.on('user', (data) {
+      setState(() {
+        userData = data;
+        _controllerAbout.text = data['AboutMe'] ?? '';
+        _controllerName.text = data['name'] ?? '';
+        _controllerNumber.text = data['PhoneNumber'] ?? '';
+        _controllerStatus.text = data['Status'] ?? '';
+      });
+    });
+
+    socket.onDisconnect((_) => print('disconnect'));
+  }
+
+  @override
+  void dispose() {
+    socket.dispose();
+    _controllerName.dispose();
+    _controllerStatus.dispose();
+    _controllerNumber.dispose();
+    _controllerAbout.dispose();
+    super.dispose();
   }
 
   @override
@@ -534,18 +575,169 @@ class ProfileState extends State<Profile> {
   //     },
   //   );
   // }
+  Widget buildEditableField(String label, TextEditingController controller,
+      bool isEnabled, void Function()? onPressed) {
+    return Row(
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(color: Colors.white, fontSize: 12),
+              ),
+              TextFormField(
+                controller: controller,
+                enabled: isEnabled,
+                style: TextStyle(color: Colors.white, fontSize: 18),
+                decoration: InputDecoration(
+                  isDense: true,
+                  border: InputBorder.none,
+                ),
+              ),
+            ],
+          ),
+        ),
+        IconButton(
+          icon: Icon(isEnabled ? Icons.check : Icons.edit,
+              color: Colors.white, size: 20),
+          onPressed: onPressed,
+        ),
+      ],
+    );
+  }
+
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Socket Example'),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(
+            bottom: Radius.circular(30),
+          ),
+        ),
+        title: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text("Profile"),
+          ],
+        ),
+        actions: [
+          IconButton(
+              icon: Icon(Icons.logout),
+              onPressed: () async {
+                await secureStorage.deleteAll();
+                Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(builder: (context) => Login()),
+                    (route) => false);
+              }),
+          Padding(
+            padding: EdgeInsets.only(right: 20),
+          )
+        ],
+        backgroundColor: Colors.white10,
+        // title: Text('Socket Example'),
       ),
-      body: Center(
-        child: ElevatedButton(
-          onPressed: () {
-            // Send a message to the server
-            // socket.emit('chat_message', 'Hello from Flutter!');
-          },
-          child: Text('Send Message'),
+      // body: Center(
+      //   child: ElevatedButton(
+      //     onPressed: () {
+      //       // Send a message to the server
+      //       // socket.emit('chat_message', 'Hello from Flutter!');
+      //     },
+      //     child: Text('Send Message'),
+      //   ),
+      // ),
+      // body: userData == null
+      //     ? Center(child: CircularProgressIndicator())
+      //     : SingleChildScrollView(
+      body: SingleChildScrollView(
+        child: Container(
+          padding: EdgeInsets.only(top: 0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              buildEditableField(
+                "Name",
+                _controllerName,
+                showName,
+                () {
+                  setState(() {
+                    if (showName) {
+                      socket.emit('update_profile', {
+                        'field': 'name',
+                        'value': _controllerName.text,
+                      });
+                    }
+                    showName = !showName;
+                  });
+                },
+              ),
+              buildEditableField(
+                "Status",
+                _controllerStatus,
+                showStatus,
+                () {
+                  setState(() {
+                    if (showStatus) {
+                      socket.emit('update_profile', {
+                        'field': 'status',
+                        'value': _controllerStatus.text,
+                      });
+                    }
+                    showStatus = !showStatus;
+                  });
+                },
+              ),
+              buildEditableField(
+                "Phone Number",
+                _controllerNumber,
+                showNumber,
+                () {
+                  setState(() {
+                    if (showNumber) {
+                      socket.emit('update_profile', {
+                        'field': 'phone',
+                        'value': _controllerNumber.text,
+                      });
+                    }
+                    showNumber = !showNumber;
+                  });
+                },
+              ),
+              buildEditableField(
+                "About",
+                _controllerAbout,
+                showAbout,
+                () {
+                  setState(() {
+                    if (showAbout) {
+                      socket.emit('update_profile', {
+                        'field': 'about',
+                        'value': _controllerAbout.text,
+                      });
+                    }
+                    showAbout = !showAbout;
+                  });
+                },
+              ),
+              Container(
+                padding: EdgeInsets.only(top: 20),
+                child: Text(
+                  "Email",
+                  style: TextStyle(color: Colors.white, fontSize: 12),
+                ),
+              ),
+              Container(
+                padding: EdgeInsets.only(top: 5),
+                child: Text(
+                  "email@example.com", // Replace with actual email
+                  style: TextStyle(color: Colors.white, fontSize: 18),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -614,52 +806,52 @@ class ProfileState extends State<Profile> {
     // });
   }
 
-  showEditoptions() {
-    return showModalBottomSheet<void>(
-        context: context,
-        builder: (BuildContext context) {
-          return Container(
-              child: new Wrap(children: <Widget>[
-            new ListTile(
-                leading: new Icon(Icons.camera_enhance),
-                title: new Text('Camera'),
-                onTap: () async {
-                  getImage(true);
-                }),
-            new ListTile(
-                leading: new Icon(Icons.photo_album),
-                title: new Text('Galary'),
-                onTap: () async {
-                  getImage(false);
-                }),
-          ]));
-        });
-  }
+  // showEditoptions() {
+  //   return showModalBottomSheet<void>(
+  //       context: context,
+  //       builder: (BuildContext context) {
+  //         return Container(
+  //             child: new Wrap(children: <Widget>[
+  //           new ListTile(
+  //               leading: new Icon(Icons.camera_enhance),
+  //               title: new Text('Camera'),
+  //               onTap: () async {
+  //                 getImage(true);
+  //               }),
+  //           new ListTile(
+  //               leading: new Icon(Icons.photo_album),
+  //               title: new Text('Galary'),
+  //               onTap: () async {
+  //                 getImage(false);
+  //               }),
+  //         ]));
+  //       });
+  // }
 
-  showEditoptions2(type) {
-    return showModalBottomSheet<void>(
-        context: context,
-        builder: (BuildContext context) {
-          return Container(
-              height: 200,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.start,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    padding: EdgeInsets.only(top: 20),
-                    child: Text(
-                      "Enter your name",
-                      style: TextStyle(color: Colors.black, fontSize: 12),
-                    ),
-                  ),
-                  Container(
-                    child: TextFormField(
-                      controller: _controller,
-                    ),
-                  ),
-                ],
-              ));
-        });
-  }
+  // showEditoptions2(type) {
+  //   return showModalBottomSheet<void>(
+  //       context: context,
+  //       builder: (BuildContext context) {
+  //         return Container(
+  //             height: 200,
+  //             child: Column(
+  //               mainAxisAlignment: MainAxisAlignment.start,
+  //               crossAxisAlignment: CrossAxisAlignment.start,
+  //               children: [
+  //                 Container(
+  //                   padding: EdgeInsets.only(top: 20),
+  //                   child: Text(
+  //                     "Enter your name",
+  //                     style: TextStyle(color: Colors.black, fontSize: 12),
+  //                   ),
+  //                 ),
+  //                 Container(
+  //                   child: TextFormField(
+  //                     controller: _controller,
+  //                   ),
+  //                 ),
+  //               ],
+  //             ));
+  //       });
+  // }
 }
